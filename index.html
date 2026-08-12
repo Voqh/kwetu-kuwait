@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Kwetu Kuwait — Find your room, find your people</title>
+<meta name="description" content="Kwetu Kuwait helps the African community in Kuwait find rooms, partitions, and roommates by area — no login, no fuss. Part of the Pamoja Afrika network.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Work+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div class="grain"></div>
+
+<header class="topbar">
+  <div class="wrap topbar-inner">
+    <a href="#" class="brand">
+      <span class="brand-mark">KW</span>
+      <span class="brand-text">
+        <span class="brand-name">Kwetu Kuwait</span>
+        <span class="brand-sub">by Pamoja Afrika</span>
+      </span>
+    </a>
+  </div>
+</header>
+
+<div id="page-home" class="page">
+<main>
+
+  <!-- HERO -->
+  <section class="hero">
+    <div class="wrap hero-inner">
+      <div class="hero-copy">
+        <div class="hero-actions hero-actions--top">
+          <button class="btn btn-secondary" data-scroll-to="board">
+            <span class="btn-icon">⌕</span> Search for a room
+          </button>
+          <button class="btn btn-primary" data-open-post>
+            <span class="btn-icon">＋</span> Post a room
+          </button>
+        </div>
+
+        <h1>A room in Kuwait<br> shouldn't take<br> three weeks to find.</h1>
+      </div>
+
+      <!-- SIGNATURE: departure board -->
+      <div class="board-frame" aria-hidden="false">
+        <div class="board-head">
+          <span>ROOMS &amp; PARTITIONS</span>
+          <span class="board-clock" id="boardClock">--:--</span>
+        </div>
+        <div class="board" id="board">
+          <div class="board-row board-row--head">
+            <span>AREA</span><span>OPEN</span><span>STATUS</span>
+          </div>
+          <div id="boardRows"><!-- rows injected by app.js --></div>
+        </div>
+        <div class="board-foot">Listings self-expire after 30 days &middot; board refreshes live</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- HOW IT WORKS -->
+  <section class="how" id="how">
+    <div class="wrap">
+      <div class="how-grid">
+        <div class="how-card how-card--post" id="howPostCard" role="button" tabindex="0" aria-label="Post a room">
+          <span class="how-tag">POST</span>
+          <h3>Got a spare bed or partition?</h3>
+          <p>Drop the area, the price, and your WhatsApp number. It goes live right away, no sign-up, and quietly expires in 30 days so the board never fills with stale listings.</p>
+        </div>
+        <div class="how-card how-card--search" id="howSearchCard" role="button" tabindex="0" aria-label="Search for a room">
+          <span class="how-tag">SEARCH</span>
+          <h3>Looking for a place?</h3>
+          <p>Start with the area, not a keyword &mdash; Salmiya, Hawally, Farwaniya, wherever you need to be. Tap a listing, message the poster directly on WhatsApp. Done.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- AREA GRID (the "search" destination) -->
+  <section class="areas" id="board-areas">
+    <div class="wrap">
+      <div class="areas-head">
+        <h2>Browse by area</h2>
+        <p>Choose the area where you'd like to find accommodation.</p>
+      </div>
+      <div class="area-grid" id="areaGrid">
+        <!-- injected by app.js -->
+      </div>
+    </div>
+  </section>
+
+  <!-- COMMUNITY STRIP -->
+  <section class="community">
+    <div class="wrap community-inner">
+      <p class="community-mark">PAMOJA AFRIKA</p>
+      <h2>Built by the community that uses it.</h2>
+      <p>Kwetu Kuwait is a Pamoja Afrika community project &mdash; run for Kenyans and the broader African diaspora in Kuwait, by the same. No middlemen, no agent fees, no login walls. Just neighbours helping neighbours find a bed.</p>
+    </div>
+  </section>
+
+</main>
+
+<footer class="footer">
+  <div class="wrap footer-inner">
+    <span>Kwetu Kuwait &middot; a Pamoja Afrika project</span>
+    <span class="footer-dot">&middot;</span>
+    <span>Listings expire automatically after 30 days</span>
+  </div>
+</footer>
+</div><!-- /page-home -->
+
+<!-- POST A ROOM — full page, not an overlay, so it scrolls normally top to bottom -->
+<section id="page-post" class="page page-post" hidden>
+  <button class="back-float" id="postBackBtn" aria-label="Back to home">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+      <polyline points="15 18 9 12 15 6"></polyline>
+    </svg>
+  </button>
+
+  <header class="page-topbar">
+    <div class="wrap page-topbar-inner">
+      <span class="page-topbar-title">Post your room</span>
+    </div>
+  </header>
+
+  <div class="wrap page-post-body">
+    <form id="postForm">
+      <label>Area
+        <select id="areaSelect" required>
+          <option value="" disabled selected>Select an area</option>
+          <option>Salmiya</option>
+          <option>Hawally</option>
+          <option>Farwaniya</option>
+          <option>Jabriya</option>
+          <option>Fahaheel</option>
+          <option>Mangaf</option>
+          <option>Khaitan</option>
+          <option>Other</option>
+        </select>
+      </label>
+      <label>Block
+        <select id="blockSelect" required disabled>
+          <option value="" disabled selected>Select an area first</option>
+        </select>
+      </label>
+      <label>Type
+        <select id="typeSelect" required>
+          <option value="" disabled selected>Select a type</option>
+          <option>Apartment</option>
+          <option>Room</option>
+          <option>Partition</option>
+          <option>Bedspace</option>
+        </select>
+      </label>
+      <label>Description
+        <textarea id="descriptionInput" rows="3" placeholder="e.g. Room available near Lulu Hyper, 10 mins walk from bus stop"></textarea>
+      </label>
+      <label>Rent (KD / month)
+        <input id="rentInput" type="number" min="0" placeholder="e.g. 70" required>
+      </label>
+      <label>Your WhatsApp number
+        <div class="phone-row">
+          <select id="ccSelect" class="cc-select" aria-label="Country code">
+            <option value="+965">🇰🇼 +965</option>
+            <option value="+254">🇰🇪 +254</option>
+          </select>
+          <input id="phoneInput" type="tel" class="phone-input" placeholder="500 12345" required>
+        </div>
+      </label>
+      <button type="submit" class="btn btn-primary btn-block">Publish listing</button>
+      <p class="modal-note" id="postFormNote">Your listing goes live immediately and expires in 30 days.</p>
+    </form>
+  </div>
+</section>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<script src="supabase-client.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
