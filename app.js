@@ -1,4 +1,4 @@
-// ---- Kuwait areas + placeholder open-listing counts ----
+// Areas displayed on the departure board and in the area grid.
 const AREAS = [
   { name: "Salmiya",    open: 14, status: "open" },
   { name: "Hawally",    open: 9,  status: "open" },
@@ -10,7 +10,7 @@ const AREAS = [
   { name: "Abbassiya",  open: 7,  status: "open" },
 ];
 
-// ---- Blocks per area (Kuwait addresses are organised by block/qita'a) ----
+// Available blocks for each area.
 const AREA_BLOCKS = {
   Salmiya: ["Block 1", "Block 2", "Block 3", "Block 4", "Block 9", "Block 10", "Block 12"],
   Hawally: ["Block 1", "Block 2", "Block 3", "Block 4", "Block 5", "Block 6"],
@@ -42,9 +42,7 @@ function deriveStatus(open) {
   return "open";
 }
 
-// Merge live counts (from Supabase) into the known area list. Any area with
-// no live listings yet still shows up, just with 0 open — this keeps the
-// board's area list stable even before the backend has real data in it.
+// Combines current listing counts with the standard area list.
 function buildAreasData(counts) {
   return AREAS.map((a) => {
     const open = counts && counts[a.name] != null ? counts[a.name] : a.open;
@@ -52,10 +50,11 @@ function buildAreasData(counts) {
   });
 }
 
-// ---- Build departure board ----
+// Elements populated with the area data.
 const boardRows = document.getElementById("boardRows");
 const areaGrid = document.getElementById("areaGrid");
 
+// Renders the departure board and selectable area cards.
 function renderAreas(data) {
   boardRows.innerHTML = "";
   areaGrid.innerHTML = "";
@@ -79,29 +78,23 @@ function renderAreas(data) {
       <span class="area-card-count">${a.open} open &middot; ${statusLabel(a.status).toLowerCase()}</span>
     `;
     card.addEventListener("click", () => {
-      // Placeholder: this is where filtered results will render once listing detail views exist
       card.style.borderColor = "var(--teal)";
     });
     areaGrid.appendChild(card);
   });
 }
 
-// Render demo data immediately so the page never looks empty while the
-// network request (if any) is in flight, then swap in live counts once
-// Supabase responds — and silently keep the demo data if it's not configured
-// or the request fails.
+// Shows initial data, then replaces it with live counts when available.
 renderAreas(buildAreasData(null));
 if (typeof fetchAreaCounts === "function" && typeof isSupabaseConfigured === "function" && isSupabaseConfigured()) {
   fetchAreaCounts()
     .then(({ data, error }) => {
       if (!error && data) renderAreas(buildAreasData(data));
     })
-    .catch(() => {
-      /* stay on demo data */
-    });
+    .catch(() => {});
 }
 
-// ---- Live clock on the board ----
+// Updates the clock displayed on the departure board.
 function updateClock() {
   const el = document.getElementById("boardClock");
   if (!el) return;
@@ -115,20 +108,9 @@ function updateClock() {
 updateClock();
 setInterval(updateClock, 30000);
 
-// ---- Post a room: real page, not an overlay, with working back navigation ----
-// "Post a room" is now a full page (#page-post) rather than a centered modal.
-// That's what fixes both complaints: (1) it's a normal document, so it
-// scrolls top to bottom instead of being stuck centered on screen, and
-// (2) we push a history entry when we open it, so the browser/device back
-// gesture — and our own back arrow — return to the home page correctly.
-//
-// The History API (pushState/replaceState/back) is wrapped in try/catch
-// everywhere below. Some sandboxed preview environments block it outright
-// (throwing a SecurityError), and without the guard that crashes the whole
-// script. On a real hosted domain these calls work normally; in a sandbox
-// they just silently no-op and the page-swap logic still runs on its own.
 let historyUsable = true;
 
+// Prevents navigation failures when browser history is unavailable.
 function safePushState(state, url) {
   if (!historyUsable) return;
   try {
@@ -138,6 +120,7 @@ function safePushState(state, url) {
   }
 }
 
+// Updates the current browser history entry safely.
 function safeReplaceState(state, url) {
   if (!historyUsable) return;
   try {
@@ -181,15 +164,14 @@ function populateBlocks(areaName) {
 
 areaSelect.addEventListener("change", () => populateBlocks(areaSelect.value));
 
-// The actual page-swap. This always runs regardless of whether the History
-// API is usable, so navigation itself never breaks — only the URL bar /
-// browser-back integration is affected in a sandboxed environment.
+// Shows the post-listing page.
 function showPost() {
   pageHome.hidden = true;
   pagePost.hidden = false;
   window.scrollTo({ top: 0, behavior: "instant" });
 }
 
+// Returns to the home page.
 function showHome() {
   pagePost.hidden = true;
   pageHome.hidden = false;
@@ -210,9 +192,6 @@ document.querySelectorAll("[data-open-post]").forEach((btn) => {
   btn.addEventListener("click", () => goToPost());
 });
 
-// Back arrow: try a real browser "back" first (keeps the URL/device back
-// gesture in sync on a real deployment); if the History API isn't usable,
-// fall back to swapping the page directly so the button still works.
 document.getElementById("postBackBtn").addEventListener("click", () => {
   if (historyUsable) {
     try {
@@ -225,7 +204,7 @@ document.getElementById("postBackBtn").addEventListener("click", () => {
   showHome();
 });
 
-// Handles the browser/device back button, not just our own arrow.
+// Supports the browser and device back actions.
 window.addEventListener("popstate", (e) => {
   if (e.state && e.state.page === "post") {
     showPost();
@@ -248,6 +227,7 @@ document.addEventListener("keydown", (e) => {
   }
 });
 
+// Submits a new listing when the form is complete.
 document.getElementById("postForm").addEventListener("submit", async (e) => {
   e.preventDefault();
   const submitBtn = e.target.querySelector("button[type=submit]");
@@ -267,8 +247,6 @@ document.getElementById("postForm").addEventListener("submit", async (e) => {
     }, 900);
   };
 
-  // Not wired to a backend yet — keep the original demo confirmation so the
-  // form remains fully testable before Supabase credentials are added.
   if (typeof isSupabaseConfigured !== "function" || !isSupabaseConfigured()) {
     submitBtn.textContent = "Listing posted ✓";
     goBackShortly();
@@ -302,7 +280,7 @@ document.getElementById("postForm").addEventListener("submit", async (e) => {
   goBackShortly();
 });
 
-// Land on the post page directly if someone opens/refreshes with #post-room
+// Opens the appropriate page for the current URL fragment.
 if (location.hash === "#post-room") {
   safeReplaceState({ page: "post" }, "#post-room");
   showPost();
@@ -310,14 +288,14 @@ if (location.hash === "#post-room") {
   safeReplaceState({ page: "home" }, "#");
 }
 
-// ---- Search for a room -> scroll to area grid ----
+// Scrolls search buttons to the area grid.
 document.querySelectorAll("[data-scroll-to]").forEach((btn) => {
   btn.addEventListener("click", () => {
     document.getElementById("board-areas").scrollIntoView({ behavior: "smooth" });
   });
 });
 
-// ---- "How it works" cards: clickable shortcuts to Post / Search ----
+// Makes the two introductory cards accessible shortcuts.
 const howPostCard = document.getElementById("howPostCard");
 const howSearchCard = document.getElementById("howSearchCard");
 
@@ -340,11 +318,7 @@ function activateSearchCard() {
   });
 });
 
-// Brighten with the matching CTA colour + slight magnify only while the
-// user is actively scrolling THROUGH the card's middle — not just whenever
-// it's anywhere on screen. rootMargin shrinks the observer's "viewport" to
-// a thin band across the vertical center, so the highlight switches on as
-// a card crosses that center band and off again once it's passed through.
+// Highlights a card while it crosses the center of the viewport.
 const howCardObserver = new IntersectionObserver(
   (entries) => {
     entries.forEach((entry) => {
@@ -355,44 +329,35 @@ const howCardObserver = new IntersectionObserver(
 );
 [howPostCard, howSearchCard].forEach((card) => howCardObserver.observe(card));
 
-// ---- Resume where the user left off (localStorage, 24hr TTL) ----
-// No accounts on Kwetu, so this can't be a server-side session — it has to
-// live in the visitor's own browser. localStorage is the right tool here:
-// unlike sessionStorage it survives closing the tab/app, and unlike a plain
-// cookie it doesn't get sent to a server that doesn't need it. We stamp
-// every save with Date.now() and just check the age on the way back in —
-// that's what gives us the 24hr expiry without needing any backend.
+// Stores the visitor's latest home-page scroll position for one day.
 const RESUME_KEY = "kwetu_resume_v1";
-const RESUME_TTL_MS = 24 * 60 * 60 * 1000; // 24 hours
+const RESUME_TTL_MS = 24 * 60 * 60 * 1000;
 
+// Saves the current scroll position.
 function saveResumeState() {
   try {
     localStorage.setItem(
       RESUME_KEY,
       JSON.stringify({ scrollY: window.scrollY, ts: Date.now() })
     );
-  } catch (e) {
-    /* storage unavailable (private browsing, etc.) — fail silently */
-  }
+  } catch (e) {}
 }
 
+// Restores a recent saved scroll position.
 function restoreResumeState() {
-  if (pageHome.hidden) return; // came in on #post-room — leave that scroll at top
+  if (pageHome.hidden) return;
   try {
     const raw = localStorage.getItem(RESUME_KEY);
     if (!raw) return;
     const { scrollY, ts } = JSON.parse(raw);
     if (Date.now() - ts > RESUME_TTL_MS) {
-      localStorage.removeItem(RESUME_KEY); // stale — older than 24hrs
+      localStorage.removeItem(RESUME_KEY);
       return;
     }
     window.scrollTo({ top: scrollY, behavior: "instant" });
-  } catch (e) {
-    /* corrupt or unavailable — ignore and start fresh */
-  }
+  } catch (e) {}
 }
 
-// Save on the ways a mobile/desktop tab actually disappears
 window.addEventListener("pagehide", saveResumeState);
 document.addEventListener("visibilitychange", () => {
   if (document.visibilityState === "hidden") saveResumeState();

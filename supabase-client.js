@@ -1,27 +1,25 @@
-// ============================================================
-// KWETU KUWAIT — Supabase wiring
-// Fill these in from your Supabase project: Settings > API
-// ============================================================
-const SUPABASE_URL = "YOUR_SUPABASE_PROJECT_URL"; // e.g. https://xxxx.supabase.co
-const SUPABASE_ANON_KEY = "YOUR_SUPABASE_ANON_KEY"; // safe to expose publicly — RLS does the real enforcement
+const SUPABASE_URL = "https://gdhxmwftdlkhlwmcafto.supabase.co";
+const SUPABASE_ANON_KEY = "sb_publishable_bvgmerahX7Ubwic2yX81JA_lTJMdItZ";
 
+// Checks whether the client can connect.
 function isSupabaseConfigured() {
-  return (
-    SUPABASE_URL !== "YOUR_SUPABASE_PROJECT_URL" &&
-    SUPABASE_ANON_KEY !== "YOUR_SUPABASE_ANON_KEY" &&
-    typeof window.supabase !== "undefined"
+  return Boolean(
+    SUPABASE_URL &&
+      SUPABASE_ANON_KEY &&
+      typeof window !== "undefined" &&
+      window.supabase
   );
 }
 
 let _client = null;
+// Creates the client once and reuses it for later requests.
 function getClient() {
   if (!isSupabaseConfigured()) return null;
   if (!_client) _client = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
   return _client;
 }
 
-// ---- Write: create a new listing ----
-// payload: { area, block, type, description, rentKwd, whatsappE164 }
+// Creates a listing from submitted form values.
 async function createListing(payload) {
   const client = getClient();
   if (!client) return { error: { message: "Supabase not configured" } };
@@ -36,9 +34,7 @@ async function createListing(payload) {
   });
 }
 
-// ---- Read: active, non-expired listings ----
-// RLS on the "listings" table already filters to status='active' AND
-// expires_at > now() — this query doesn't need to repeat that logic.
+// Retrieves active listings, newest first.
 async function fetchActiveListings() {
   const client = getClient();
   if (!client) return { data: null, error: { message: "Supabase not configured" } };
@@ -46,7 +42,7 @@ async function fetchActiveListings() {
   return client.from("listings").select("*").order("created_at", { ascending: false });
 }
 
-// ---- Read: listing counts grouped by area (for the board + area grid) ----
+// Counts active listings for each area.
 async function fetchAreaCounts() {
   const { data, error } = await fetchActiveListings();
   if (error || !data) return { data: null, error };

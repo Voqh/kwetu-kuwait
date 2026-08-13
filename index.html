@@ -7,7 +7,7 @@
 <meta name="description" content="Kwetu Kuwait helps the African community in Kuwait find rooms, partitions, and roommates by area — no login, no fuss. Part of the Pamoja Afrika network.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Work+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css">
+<link rel="css/stylesheet" href="css/style.css">
 </head>
 <body>
 
@@ -28,7 +28,7 @@
 <div id="page-home" class="page">
 <main>
 
-  <!-- HERO -->
+  <!-- Main introduction and primary actions. -->
   <section class="hero">
     <div class="wrap hero-inner">
       <div class="hero-copy">
@@ -44,7 +44,7 @@
         <h1>A room in Kuwait<br> shouldn't take<br> three weeks to find.</h1>
       </div>
 
-      <!-- SIGNATURE: departure board -->
+      <!-- Live summary of available listings by area. -->
       <div class="board-frame" aria-hidden="false">
         <div class="board-head">
           <span>ROOMS &amp; PARTITIONS</span>
@@ -54,14 +54,14 @@
           <div class="board-row board-row--head">
             <span>AREA</span><span>OPEN</span><span>STATUS</span>
           </div>
-          <div id="boardRows"><!-- rows injected by app.js --></div>
+          <div id="boardRows"></div>
         </div>
         <div class="board-foot">Listings self-expire after 30 days &middot; board refreshes live</div>
       </div>
     </div>
   </section>
 
-  <!-- HOW IT WORKS -->
+  <!-- Explains the posting and search flows. -->
   <section class="how" id="how">
     <div class="wrap">
       <div class="how-grid">
@@ -79,7 +79,7 @@
     </div>
   </section>
 
-  <!-- AREA GRID (the "search" destination) -->
+  <!-- Area selection controls. -->
   <section class="areas" id="board-areas">
     <div class="wrap">
       <div class="areas-head">
@@ -87,12 +87,11 @@
         <p>Choose the area where you'd like to find accommodation.</p>
       </div>
       <div class="area-grid" id="areaGrid">
-        <!-- injected by app.js -->
       </div>
     </div>
   </section>
 
-  <!-- COMMUNITY STRIP -->
+  <!-- Project description. -->
   <section class="community">
     <div class="wrap community-inner">
       <p class="community-mark">PAMOJA AFRIKA</p>
@@ -110,9 +109,9 @@
     <span>Listings expire automatically after 30 days</span>
   </div>
 </footer>
-</div><!-- /page-home -->
+</div>
 
-<!-- POST A ROOM — full page, not an overlay, so it scrolls normally top to bottom -->
+<!-- Listing submission page. -->
 <section id="page-post" class="page page-post" hidden>
   <button class="back-float" id="postBackBtn" aria-label="Back to home">
     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
