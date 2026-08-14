@@ -1,264 +1,366 @@
-/**
- * KWETU KUWAIT - Main Application Logic
- * Connects the UI to the Supabase client functions.
- */
+// Areas displayed on the departure board and in the area grid.
+const AREAS = [
+  { name: "Salmiya",    open: 14, status: "open" },
+  { name: "Hawally",    open: 9,  status: "open" },
+  { name: "Farwaniya",  open: 3,  status: "few"  },
+  { name: "Jabriya",    open: 6,  status: "open" },
+  { name: "Fahaheel",   open: 0,  status: "full" },
+  { name: "Mangaf",     open: 5,  status: "open" },
+  { name: "Khaitan",    open: 2,  status: "few"  },
+  { name: "Abbassiya",  open: 7,  status: "open" },
+];
 
-// --- STATE & ELEMENTS ---
-const state = {
-  listings: [],
-  areas: ['Salmiya', 'Hawally', 'Farwaniya', 'Jabriya', 'Fahaheel', 'Mangaf', 'Khaitan', 'Other']
+// Available blocks for each area.
+const AREA_BLOCKS = {
+  Salmiya: ["Block 1", "Block 2", "Block 3", "Block 4", "Block 9", "Block 10", "Block 12"],
+  Hawally: ["Block 1", "Block 2", "Block 3", "Block 4", "Block 5", "Block 6"],
+  Farwaniya: ["Block 1", "Block 2", "Block 3", "Block 4", "Block 5"],
+  Jabriya: ["Block 1", "Block 2", "Block 3", "Block 4", "Block 5", "Block 6", "Block 9", "Block 10", "Block 12"],
+  Fahaheel: ["Block 1", "Block 2", "Block 3", "Block 4", "Block 5"],
+  Mangaf: ["Block 1", "Block 2", "Block 3", "Block 4", "Block 5", "Block 6"],
+  Khaitan: ["Block 1", "Block 2", "Block 3", "Block 4", "Block 5"],
+  Abbassiya: ["Block 1", "Block 2", "Block 3", "Block 4"],
+  Other: [],
 };
 
-const UI = {
-  pages: {
-    home: document.getElementById('page-home'),
-    post: document.getElementById('page-post'),
-    listings: document.getElementById('page-listings')
-  },
-  boardRows: document.getElementById('boardRows'),
-  boardClock: document.getElementById('boardClock'),
-  areaGrid: document.getElementById('areaGrid'),
-  postForm: document.getElementById('postForm'),
-  postFormNote: document.getElementById('postFormNote'),
-  listingsGrid: document.getElementById('listingsGrid'),
-  listingsAreaTitle: document.getElementById('listingsAreaTitle'),
-  
-  // Buttons
-  btnOpenPost: document.querySelector('[data-open-post]'),
-  btnScrollBoard: document.querySelector('[data-scroll-to="board"]'),
-  postBackBtn: document.getElementById('postBackBtn'),
-  listingsBackBtn: document.getElementById('listingsBackBtn'),
-  
-  // Form Inputs
-  areaSelect: document.getElementById('areaSelect'),
-  blockSelect: document.getElementById('blockSelect'),
-  typeSelect: document.getElementById('typeSelect'),
-  descriptionInput: document.getElementById('descriptionInput'),
-  rentInput: document.getElementById('rentInput'),
-  ccSelect: document.getElementById('ccSelect'),
-  phoneInput: document.getElementById('phoneInput')
-};
+function flickerify(text) {
+  return text
+    .split("")
+    .map((ch, i) => `<span style="--d:${i}">${ch}</span>`)
+    .join("");
+}
 
-// --- INITIALIZATION ---
-document.addEventListener('DOMContentLoaded', () => {
-  initApp();
-  setupEventListeners();
-  startClock();
+function statusLabel(status) {
+  if (status === "open") return "OPEN";
+  if (status === "few") return "FEW LEFT";
+  return "FULL";
+}
+
+function deriveStatus(open) {
+  if (open === 0) return "full";
+  if (open <= 3) return "few";
+  return "open";
+}
+
+// Combines current listing counts with the standard area list.
+function buildAreasData(counts) {
+  return AREAS.map((a) => {
+    const open = counts && counts[a.name] != null ? counts[a.name] : a.open;
+    return { name: a.name, open, status: deriveStatus(open) };
+  });
+}
+
+// Elements populated with the area data.
+const boardRows = document.getElementById("boardRows");
+const areaGrid = document.getElementById("areaGrid");
+
+// Renders the departure board and selectable area cards.
+function renderAreas(data) {
+  boardRows.innerHTML = "";
+  areaGrid.innerHTML = "";
+
+  data.forEach((a, idx) => {
+    const row = document.createElement("div");
+    row.className = "board-row";
+    row.style.setProperty("--d", idx);
+    row.innerHTML = `
+      <span class="flicker">${flickerify(a.name)}</span>
+      <span>${String(a.open).padStart(2, "0")}</span>
+      <span class="status-${a.status}">${statusLabel(a.status)}</span>
+    `;
+    boardRows.appendChild(row);
+
+    const card = document.createElement("button");
+    card.className = "area-card";
+    card.type = "button";
+    card.innerHTML = `
+      <span class="area-card-name">${a.name}</span>
+      <span class="area-card-count">${a.open} open &middot; ${statusLabel(a.status).toLowerCase()}</span>
+    `;
+    card.addEventListener("click", () => {
+      card.style.borderColor = "var(--teal)";
+    });
+    areaGrid.appendChild(card);
+  });
+}
+
+// Shows initial data, then replaces it with live counts when available.
+renderAreas(buildAreasData(null));
+if (typeof fetchAreaCounts === "function" && typeof isSupabaseConfigured === "function" && isSupabaseConfigured()) {
+  fetchAreaCounts()
+    .then(({ data, error }) => {
+      if (!error && data) renderAreas(buildAreasData(data));
+    })
+    .catch(() => {});
+}
+
+// Updates the clock displayed on the departure board.
+function updateClock() {
+  const el = document.getElementById("boardClock");
+  if (!el) return;
+  const now = new Date();
+  el.textContent = now.toLocaleTimeString("en-GB", {
+    hour: "2-digit",
+    minute: "2-digit",
+    timeZone: "Asia/Kuwait",
+  });
+}
+updateClock();
+setInterval(updateClock, 30000);
+
+let historyUsable = true;
+
+// Prevents navigation failures when browser history is unavailable.
+function safePushState(state, url) {
+  if (!historyUsable) return;
+  try {
+    history.pushState(state, "", url);
+  } catch (e) {
+    historyUsable = false;
+  }
+}
+
+// Updates the current browser history entry safely.
+function safeReplaceState(state, url) {
+  if (!historyUsable) return;
+  try {
+    history.replaceState(state, "", url);
+  } catch (e) {
+    historyUsable = false;
+  }
+}
+
+const pageHome = document.getElementById("page-home");
+const pagePost = document.getElementById("page-post");
+const areaSelect = document.getElementById("areaSelect");
+const blockSelect = document.getElementById("blockSelect");
+
+function populateBlocks(areaName) {
+  const blocks = AREA_BLOCKS[areaName] || [];
+  blockSelect.innerHTML = "";
+  if (!areaName || blocks.length === 0) {
+    blockSelect.disabled = true;
+    const opt = document.createElement("option");
+    opt.value = "";
+    opt.disabled = true;
+    opt.selected = true;
+    opt.textContent = areaName ? "No blocks listed for this area" : "Select an area first";
+    blockSelect.appendChild(opt);
+    return;
+  }
+  blockSelect.disabled = false;
+  const placeholder = document.createElement("option");
+  placeholder.value = "";
+  placeholder.disabled = true;
+  placeholder.selected = true;
+  placeholder.textContent = "Select a block";
+  blockSelect.appendChild(placeholder);
+  blocks.forEach((b) => {
+    const opt = document.createElement("option");
+    opt.textContent = b;
+    blockSelect.appendChild(opt);
+  });
+}
+
+areaSelect.addEventListener("change", () => populateBlocks(areaSelect.value));
+
+// Shows the post-listing page.
+function showPost() {
+  pageHome.hidden = true;
+  pagePost.hidden = false;
+  window.scrollTo({ top: 0, behavior: "instant" });
+}
+
+// Returns to the home page.
+function showHome() {
+  pagePost.hidden = true;
+  pageHome.hidden = false;
+  window.scrollTo({ top: 0, behavior: "instant" });
+}
+
+function goToPost() {
+  showPost();
+  safePushState({ page: "post" }, "#post-room");
+}
+
+function goToHome() {
+  showHome();
+  safePushState({ page: "home" }, "#");
+}
+
+document.querySelectorAll("[data-open-post]").forEach((btn) => {
+  btn.addEventListener("click", () => goToPost());
 });
 
-async function initApp() {
-  await loadData();
-}
-
-function setupEventListeners() {
-  // Navigation
-  UI.btnOpenPost.addEventListener('click', () => navigateTo('post'));
-  UI.postBackBtn.addEventListener('click', () => navigateTo('home'));
-  UI.listingsBackBtn.addEventListener('click', () => navigateTo('home'));
-  
-  UI.btnScrollBoard.addEventListener('click', () => {
-    document.getElementById('board').scrollIntoView({ behavior: 'smooth', block: 'center' });
-  });
-
-  // Form Logic
-  UI.areaSelect.addEventListener('change', handleAreaSelection);
-  UI.postForm.addEventListener('submit', handlePostSubmission);
-}
-
-// --- DATA FETCHING & RENDERING ---
-async function loadData() {
-  // fetchActiveListings is defined in your supabase-client.js
-  const { data, error } = await fetchActiveListings();
-  
-  if (error) {
-    console.error("Failed to load listings:", error);
-    return;
-  }
-  
-  state.listings = data || [];
-  renderDepartureBoard();
-  renderAreaGrid();
-}
-
-// --- DEPARTURE BOARD ---
-function renderDepartureBoard() {
-  if (!UI.boardRows) return;
-  
-  UI.boardRows.innerHTML = '';
-  // Show the 6 most recent listings on the board
-  const recentListings = state.listings.slice(0, 6);
-  
-  if (recentListings.length === 0) {
-    UI.boardRows.innerHTML = `<div class="board-row" style="grid-column: 1/-1; text-align:center;">No active listings found.</div>`;
-    return;
-  }
-
-  recentListings.forEach((listing, index) => {
-    const isNew = (new Date() - new Date(listing.created_at)) < 86400000; // Less than 24h old
-    const statusText = isNew ? 'JUST ADDED' : 'AVAILABLE';
-    const statusClass = isNew ? 'status-open' : 'status-few';
-    
-    // Create a flicker effect for text
-    const areaFlicker = createFlickerText(listing.area.toUpperCase());
-    
-    const row = document.createElement('div');
-    row.className = 'board-row';
-    row.innerHTML = `
-      <span class="flicker" style="--d: ${index}">${areaFlicker}</span>
-      <span>${listing.type ? listing.type.toUpperCase() : 'ROOM'}</span>
-      <span class="${statusClass}">${statusText}</span>
-    `;
-    UI.boardRows.appendChild(row);
-  });
-}
-
-function createFlickerText(text) {
-  return text.split('').map((char, i) => 
-    `<span style="animation-delay: ${Math.random() * 2}s">${char}</span>`
-  ).join('');
-}
-
-function startClock() {
-  setInterval(() => {
-    const now = new Date();
-    UI.boardClock.textContent = now.toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit' });
-  }, 1000);
-}
-
-// --- AREA GRID ---
-function renderAreaGrid() {
-  if (!UI.areaGrid) return;
-  UI.areaGrid.innerHTML = '';
-
-  // Count listings per area
-  const counts = state.listings.reduce((acc, curr) => {
-    acc[curr.area] = (acc[curr.area] || 0) + 1;
-    return acc;
-  }, {});
-
-  state.areas.forEach(area => {
-    const count = counts[area] || 0;
-    const card = document.createElement('div');
-    card.className = 'area-card';
-    card.tabIndex = 0;
-    card.role = 'button';
-    card.innerHTML = `
-      <span class="area-card-name">${area}</span>
-      <span class="area-card-count">${count} ${count === 1 ? 'Listing' : 'Listings'}</span>
-    `;
-    
-    card.addEventListener('click', () => openAreaListings(area));
-    UI.areaGrid.appendChild(card);
-  });
-}
-
-// --- LISTINGS PAGE ---
-function openAreaListings(area) {
-  UI.listingsAreaTitle.textContent = area;
-  UI.listingsGrid.innerHTML = '';
-  
-  const areaListings = state.listings.filter(l => l.area === area);
-  
-  if (areaListings.length === 0) {
-    UI.listingsGrid.innerHTML = `<div class="listings-empty">No active listings in ${area} right now. Check back soon.</div>`;
-  } else {
-    areaListings.forEach(listing => {
-      const card = document.createElement('div');
-      card.className = 'listing-card';
-      
-      const date = new Date(listing.created_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
-      const phone = `${listing.whatsapp_e164}`;
-      const whatsappLink = `https://wa.me/${phone.replace('+', '')}?text=Hi,%20I%20saw%20your%20listing%20on%20Kwetu%20Kuwait%20for%20a%20${listing.type || 'room'}%20in%20${listing.area}.`;
-
-      card.innerHTML = `
-        <span class="listing-date">POSTED ${date.toUpperCase()}</span>
-        <p class="listing-desc">${escapeHtml(listing.description || `${listing.type} available in ${listing.area}.`)}</p>
-        <div class="listing-footer">
-          <span class="listing-area">${listing.type ? listing.type + ' • ' : ''}${listing.rent_kwd} KD</span>
-          <span class="listing-sep">|</span>
-          <span class="listing-block">Block ${listing.block}</span>
-          <span class="listing-sep">|</span>
-          <a href="${whatsappLink}" target="_blank" class="listing-phone">WhatsApp: ${phone}</a>
-        </div>
-      `;
-      UI.listingsGrid.appendChild(card);
-    });
-  }
-  
-  navigateTo('listings');
-}
-
-// --- FORM HANDLING ---
-function handleAreaSelection() {
-  if (UI.areaSelect.value) {
-    UI.blockSelect.disabled = false;
-    UI.blockSelect.innerHTML = '<option value="" disabled selected>Select block</option>';
-    // Populate simple blocks 1-12 for demo purposes
-    for(let i=1; i<=12; i++) {
-      UI.blockSelect.innerHTML += `<option value="${i}">Block ${i}</option>`;
+document.getElementById("postBackBtn").addEventListener("click", () => {
+  if (historyUsable) {
+    try {
+      history.back();
+      return;
+    } catch (e) {
+      historyUsable = false;
     }
   }
-}
+  showHome();
+});
 
-async function handlePostSubmission(e) {
+// Supports the browser and device back actions.
+window.addEventListener("popstate", (e) => {
+  if (e.state && e.state.page === "post") {
+    showPost();
+  } else {
+    showHome();
+  }
+});
+
+document.addEventListener("keydown", (e) => {
+  if (e.key === "Escape" && !pagePost.hidden) {
+    if (historyUsable) {
+      try {
+        history.back();
+        return;
+      } catch (err) {
+        historyUsable = false;
+      }
+    }
+    showHome();
+  }
+});
+
+// Submits a new listing when the form is complete.
+document.getElementById("postForm").addEventListener("submit", async (e) => {
   e.preventDefault();
-  
-  const submitBtn = UI.postForm.querySelector('button[type="submit"]');
-  const originalText = submitBtn.textContent;
-  
-  submitBtn.disabled = true;
-  submitBtn.textContent = 'Publishing...';
-  
-  const payload = {
-    area: UI.areaSelect.value,
-    block: UI.blockSelect.value,
-    type: UI.typeSelect.value,
-    description: UI.descriptionInput.value,
-    rentKwd: parseFloat(UI.rentInput.value),
-    whatsappE164: UI.ccSelect.value + UI.phoneInput.value.replace(/\D/g, '')
+  const submitBtn = e.target.querySelector("button[type=submit]");
+  const note = document.getElementById("postFormNote");
+
+  const goBackShortly = () => {
+    setTimeout(() => {
+      if (historyUsable) {
+        try {
+          history.back();
+          return;
+        } catch (err) {
+          historyUsable = false;
+        }
+      }
+      showHome();
+    }, 900);
   };
 
-  // createListing is defined in your supabase-client.js
-  const response = await createListing(payload);
+  if (typeof isSupabaseConfigured !== "function" || !isSupabaseConfigured()) {
+    submitBtn.textContent = "Listing posted ✓";
+    goBackShortly();
+    return;
+  }
 
-  if (response.error) {
-    UI.postFormNote.textContent = `Error: ${response.error.message}`;
-    UI.postFormNote.style.color = '#C97878'; // Error color
+  const ccValue = document.getElementById("ccSelect").value;
+  const phoneValue = document.getElementById("phoneInput").value.trim();
+
+  submitBtn.disabled = true;
+  submitBtn.textContent = "Publishing…";
+
+  const { error } = await createListing({
+    area: areaSelect.value,
+    block: blockSelect.value || null,
+    type: document.getElementById("typeSelect").value,
+    description: document.getElementById("descriptionInput").value.trim(),
+    rentKwd: Number(document.getElementById("rentInput").value),
+    whatsappE164: `${ccValue}${phoneValue.replace(/\s+/g, "")}`,
+  });
+
+  if (error) {
     submitBtn.disabled = false;
-    submitBtn.textContent = originalText;
-  } else {
-    UI.postFormNote.textContent = 'Success! Your listing is now live.';
-    UI.postFormNote.style.color = '#1C7C74'; // Teal success
-    
-    // Refresh data and go home
-    await loadData();
-    setTimeout(() => {
-      UI.postForm.reset();
-      UI.blockSelect.disabled = true;
-      UI.postFormNote.textContent = 'Your listing goes live immediately and expires in 30 days.';
-      UI.postFormNote.style.color = '';
-      submitBtn.disabled = false;
-      submitBtn.textContent = originalText;
-      navigateTo('home');
-    }, 1500);
+    submitBtn.textContent = "Publish listing";
+    note.textContent = "Something went wrong publishing your listing — please try again.";
+    note.style.color = "#C97878";
+    return;
   }
+
+  submitBtn.textContent = "Listing posted ✓";
+  goBackShortly();
+});
+
+// Opens the appropriate page for the current URL fragment.
+if (location.hash === "#post-room") {
+  safeReplaceState({ page: "post" }, "#post-room");
+  showPost();
+} else {
+  safeReplaceState({ page: "home" }, "#");
 }
 
-// --- UTILS ---
-function navigateTo(pageId) {
-  Object.values(UI.pages).forEach(page => {
-    if (page) page.hidden = true;
+// Scrolls search buttons to the area grid.
+document.querySelectorAll("[data-scroll-to]").forEach((btn) => {
+  btn.addEventListener("click", () => {
+    document.getElementById("board-areas").scrollIntoView({ behavior: "smooth" });
   });
-  
-  if (UI.pages[pageId]) {
-    UI.pages[pageId].hidden = false;
-    window.scrollTo(0, 0);
-  }
+});
+
+// Makes the two introductory cards accessible shortcuts.
+const howPostCard = document.getElementById("howPostCard");
+const howSearchCard = document.getElementById("howSearchCard");
+
+function activatePostCard() {
+  goToPost();
+}
+function activateSearchCard() {
+  howSearchCard.querySelector(".how-tag").classList.add("tag-clicked");
+  document.getElementById("board-areas").scrollIntoView({ behavior: "smooth" });
 }
 
-function escapeHtml(str) {
-  if (!str) return '';
-  return str.replace(/[&<>"']/g, function(m) {
-    return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' }[m];
+[howPostCard, howSearchCard].forEach((card) => {
+  const action = card === howPostCard ? activatePostCard : activateSearchCard;
+  card.addEventListener("click", action);
+  card.addEventListener("keydown", (e) => {
+    if (e.key === "Enter" || e.key === " ") {
+      e.preventDefault();
+      action();
+    }
   });
+});
+
+// Highlights a card while it crosses the center of the viewport.
+const howCardObserver = new IntersectionObserver(
+  (entries) => {
+    entries.forEach((entry) => {
+      entry.target.classList.toggle("in-view", entry.isIntersecting);
+    });
+  },
+  { threshold: 0, rootMargin: "-42% 0px -42% 0px" }
+);
+[howPostCard, howSearchCard].forEach((card) => howCardObserver.observe(card));
+
+// Stores the visitor's latest home-page scroll position for one day.
+const RESUME_KEY = "kwetu_resume_v1";
+const RESUME_TTL_MS = 24 * 60 * 60 * 1000;
+
+// Saves the current scroll position.
+function saveResumeState() {
+  try {
+    localStorage.setItem(
+      RESUME_KEY,
+      JSON.stringify({ scrollY: window.scrollY, ts: Date.now() })
+    );
+  } catch (e) {}
 }
+
+// Restores a recent saved scroll position.
+function restoreResumeState() {
+  if (pageHome.hidden) return;
+  try {
+    const raw = localStorage.getItem(RESUME_KEY);
+    if (!raw) return;
+    const { scrollY, ts } = JSON.parse(raw);
+    if (Date.now() - ts > RESUME_TTL_MS) {
+      localStorage.removeItem(RESUME_KEY);
+      return;
+    }
+    window.scrollTo({ top: scrollY, behavior: "instant" });
+  } catch (e) {}
+}
+
+window.addEventListener("pagehide", saveResumeState);
+document.addEventListener("visibilitychange", () => {
+  if (document.visibilityState === "hidden") saveResumeState();
+});
+
+restoreResumeState();
