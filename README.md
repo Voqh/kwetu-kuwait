@@ -53,3 +53,13 @@ Roadmap
 License
 
 TBD.
+
+Recommendations
+- **Server-side edit-window enforcement:** The client shows a 2-minute edit window; enforce this in Postgres/RLS or a Postgres function so updates after the window are rejected server-side.
+- **Row-Level Security & least privilege:** Keep insert/select/update policies tight. Use JWT claims or a short-lived edit token to allow edits only for the allowed timeframe.
+- **Input validation on server:** Validate phone numbers, rent numeric ranges, and sanitize descriptions server-side to prevent injection or malformed data.
+- **Optimistic UI + rollback:** Apply optimistic updates on the client for a snappy UX, but rollback if the server returns an error.
+- **Rate limiting & abuse prevention:** Consider server-side rate limits or a lightweight CAPTCHA for anonymous posting to avoid spam.
+- **Use HTTPS & secrets handling:** Never expose service role keys on the client. Keep only publishable keys in the frontend; move sensitive actions to server-side functions.
+- **Audit logging:** Store who created/edited a listing (IP, timestamp) to help abuse investigations and to enforce edit windows reliably.
+
