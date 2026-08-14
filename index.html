@@ -16,7 +16,19 @@
 <header class="topbar">
   <div class="wrap topbar-inner">
     <a href="#" class="brand">
-      <span class="brand-mark">KW</span>
+      <span class="brand-logo">
+        <svg viewBox="0 0 64 64" width="34" height="34" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false" role="img">
+          <g fill="currentColor">
+            <rect x="30" y="2" width="4" height="10" rx="2" />
+            <polygon points="32,14 6,28 58,28" />
+            <rect x="6" y="34" width="24" height="4" rx="1" />
+            <rect x="34" y="34" width="24" height="4" rx="1" />
+            <rect x="14" y="40" width="36" height="4" rx="1" />
+            <rect x="10" y="46" width="44" height="4" rx="1" />
+            <rect x="2" y="60" width="60" height="2" rx="1" />
+          </g>
+        </svg>
+      </span>
       <span class="brand-text">
         <span class="brand-name">Kwetu Kuwait</span>
         <span class="brand-sub">by Pamoja Afrika</span>
@@ -28,7 +40,7 @@
 <div id="page-home" class="page">
 <main>
 
-  <!-- Main introduction and primary actions. -->
+  <!-- HERO -->
   <section class="hero">
     <div class="wrap hero-inner">
       <div class="hero-copy">
@@ -44,7 +56,7 @@
         <h1>A room in Kuwait<br> shouldn't take<br> three weeks to find.</h1>
       </div>
 
-      <!-- Live summary of available listings by area. -->
+      <!-- SIGNATURE: departure board -->
       <div class="board-frame" aria-hidden="false">
         <div class="board-head">
           <span>ROOMS &amp; PARTITIONS</span>
@@ -54,14 +66,14 @@
           <div class="board-row board-row--head">
             <span>AREA</span><span>OPEN</span><span>STATUS</span>
           </div>
-          <div id="boardRows"></div>
+          <div id="boardRows"><!-- rows injected by app.js --></div>
         </div>
         <div class="board-foot">Listings self-expire after 30 days &middot; board refreshes live</div>
       </div>
     </div>
   </section>
 
-  <!-- Explains the posting and search flows. -->
+  <!-- HOW IT WORKS -->
   <section class="how" id="how">
     <div class="wrap">
       <div class="how-grid">
@@ -79,7 +91,7 @@
     </div>
   </section>
 
-  <!-- Area selection controls. -->
+  <!-- AREA GRID (the "search" destination) -->
   <section class="areas" id="board-areas">
     <div class="wrap">
       <div class="areas-head">
@@ -87,11 +99,12 @@
         <p>Choose the area where you'd like to find accommodation.</p>
       </div>
       <div class="area-grid" id="areaGrid">
+        <!-- injected by app.js -->
       </div>
     </div>
   </section>
 
-  <!-- Project description. -->
+  <!-- COMMUNITY STRIP -->
   <section class="community">
     <div class="wrap community-inner">
       <p class="community-mark">PAMOJA AFRIKA</p>
@@ -109,9 +122,9 @@
     <span>Listings expire automatically after 30 days</span>
   </div>
 </footer>
-</div>
+</div><!-- /page-home -->
 
-<!-- Listing submission page. -->
+<!-- POST A ROOM — full page, not an overlay, so it scrolls normally top to bottom -->
 <section id="page-post" class="page page-post" hidden>
   <button class="back-float" id="postBackBtn" aria-label="Back to home">
     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
@@ -175,8 +188,27 @@
   </div>
 </section>
 
+<!-- AREA LISTINGS — full page, opened by tapping an area card -->
+<section id="page-listings" class="page page-listings" hidden>
+  <button class="back-float" id="listingsBackBtn" aria-label="Back to home">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+      <polyline points="15 18 9 12 15 6"></polyline>
+    </svg>
+  </button>
+
+  <header class="page-topbar">
+    <div class="wrap page-topbar-inner">
+      <span class="page-topbar-title" id="listingsAreaTitle">Area</span>
+    </div>
+  </header>
+
+  <div class="wrap page-listings-body">
+    <div class="listings-grid" id="listingsGrid"><!-- listing cards injected by app.js --></div>
+  </div>
+</section>
+
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
-<script src="supabase-client.js"></script>
-<script src="app.js"></script>
+<script src="js/supabase-client.js"></script>
+<script src="js/app.js"></script>
 </body>
 </html>

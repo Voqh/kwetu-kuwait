@@ -53,3 +53,22 @@ async function fetchAreaCounts() {
   });
   return { data: counts, error: null };
 }
+
+// Update an existing listing by id.
+async function updateListing(id, payload) {
+  const client = getClient();
+  if (!client) return { error: { message: 'Supabase not configured' } };
+
+  return client
+    .from('listings')
+    .update({
+      area: payload.area,
+      block: payload.block || null,
+      type: payload.type,
+      description: payload.description || null,
+      rent_kwd: payload.rentKwd,
+      whatsapp_e164: payload.whatsappE164,
+    })
+    .eq('id', id)
+    .select();
+}
