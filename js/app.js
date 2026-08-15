@@ -139,15 +139,331 @@ function renderAreas(data) {
   });
 }
 
+// Render areas into the dedicated search page grid
+const searchAreaGrid = document.getElementById('searchAreaGrid');
+function renderSearchAreas(data) {
+  if (!searchAreaGrid) return;
+  searchAreaGrid.innerHTML = '';
+  data.forEach((a) => {
+    const btn = document.createElement('button');
+    btn.className = 'search-area-card';
+    btn.type = 'button';
+    btn.innerHTML = `<span class="area-card-name">${a.name}</span><span class="area-card-count">${a.open} open · ${statusLabel(a.status).toLowerCase()}</span>`;
+    btn.addEventListener('click', () => openAreaListings(a.name));
+    searchAreaGrid.appendChild(btn);
+  });
+}
+
+// Page-search: input, type filters, results, and suggestion handling
+const searchInput = document.getElementById('searchInput');
+const searchResults = document.getElementById('searchResults');
+const searchSuggestion = document.getElementById('searchSuggestion');
+let _searchTypeFilter = 'All';
+let currentSearchHighlightQuery = '';
+
+// debounce helper
+function debounce(fn, wait) {
+  let t = null;
+  return function(...args) {
+    clearTimeout(t);
+    t = setTimeout(() => fn.apply(this, args), wait);
+  };
+}
+
+// determine fuzzy threshold based on token length (stricter for short tokens)
+function fuzzyThresholdFor(token) {
+  if (!token) return 0;
+  if (token.length <= 3) return 1;
+  if (token.length <= 6) return 2;
+  return 3;
+}
+
+// highlight helper: wraps matched tokens in <mark>
+function escapeRegex(s){ return s.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'); }
+function highlightText(text, query) {
+  if (!query || !text) return text;
+  const tokens = query.toString().toLowerCase().split(/\s+/).filter(Boolean);
+  if (tokens.length === 0) return text;
+  let out = text;
+  tokens.forEach(t => {
+    if (!t) return;
+    try {
+      const re = new RegExp('(' + escapeRegex(t) + ')', 'ig');
+      out = out.replace(re, '<mark>$1</mark>');
+    } catch (e) {}
+  });
+  return out;
+}
+
+function clearSearchUI() {
+  if (searchResults) { searchResults.innerHTML = ''; searchResults.hidden = true; }
+  if (searchSuggestion) { searchSuggestion.innerHTML = ''; searchSuggestion.hidden = true; }
+  if (searchAreaGrid) searchAreaGrid.hidden = false;
+}
+
+async function performPageSearch(q) {
+  if (!q || q.trim().length === 0) { clearSearchUI(); return; }
+  q = q.trim();
+  currentSearchHighlightQuery = q;
+  if (searchAreaGrid) searchAreaGrid.hidden = true;
+  if (searchResults) searchResults.hidden = false;
+
+  const all = await gatherAllListings();
+  const typeFilter = _searchTypeFilter && _searchTypeFilter !== 'All' ? _searchTypeFilter.toLowerCase() : null;
+  const results = all.filter(item => {
+    if (typeFilter && ((item.type||'').toLowerCase() !== typeFilter)) return false;
+    const hay = `${item.area||''} ${item.type||''} ${item.description||''}`.toLowerCase();
+    if (hay.includes(q.toLowerCase())) return true;
+    const tokens = q.toLowerCase().split(/\s+/);
+    return tokens.some(t => {
+      if (t.length < 3) return hay.includes(t);
+      const thr = fuzzyThresholdFor(t);
+      return hay.split(/\s+/).some(w => levenshtein(w, t) <= thr);
+    });
+  });
+
+  renderListingsToContainer(results, searchResults);
+
+  // show autocomplete suggestions inline
+  showAutocompleteSuggestions(q);
+
+  // Suggest closest area name if user likely misspelled an area
+  const areaNames = AREAS.map(a => a.name);
+  let best = { name: null, dist: Infinity };
+  areaNames.forEach(name => {
+    const d = levenshtein(name.toLowerCase(), q.toLowerCase());
+    if (d < best.dist) best = { name, dist: d };
+  });
+  const areaThr = fuzzyThresholdFor(q);
+  if (best.dist <= Math.max(1, areaThr) && best.name) {
+    if (searchSuggestion) {
+      searchSuggestion.hidden = false;
+      searchSuggestion.innerHTML = `Did you mean <button id="searchSuggestBtn">${best.name}</button>?`;
+      const btn = document.getElementById('searchSuggestBtn');
+      if (btn) btn.addEventListener('click', () => {
+        // show listings for suggested area
+        openAreaListings(best.name);
+      });
+    }
+  } else {
+    // No close single-area match — if there are no results, offer a small
+    // 'No results — try these' suggestion list based on nearest areas and types.
+    if (results.length === 0 && searchSuggestion) {
+      const areaSug = getAreaSuggestions(q, 4);
+      const types = ['Apartment', 'Room', 'Partition', 'Bedspace'];
+      const typeSug = types.filter(t => {
+        const l = t.toLowerCase();
+        const ql = q.toLowerCase();
+        return l.includes(ql) || levenshtein(l, ql) <= fuzzyThresholdFor(ql);
+      });
+      let html = '<div class="no-results-suggest">No listings found. Try these:</div><div class="suggest-list">';
+      areaSug.forEach(a => { html += `<button class="suggest-btn" data-suggest="area:${a}">${a}</button>`; });
+      typeSug.forEach(t => { html += `<button class="suggest-btn" data-suggest="type:${t}">${t}</button>`; });
+      html += '</div>';
+      searchSuggestion.hidden = false;
+      searchSuggestion.innerHTML = html;
+      // wire buttons
+      Array.from(searchSuggestion.querySelectorAll('.suggest-btn')).forEach(b => b.addEventListener('click', (e) => {
+        const v = b.getAttribute('data-suggest');
+        if (!v) return;
+        if (v.startsWith('area:')) openAreaListings(v.replace('area:',''));
+        else if (v.startsWith('type:')) handleSearchSubmit(v.replace('type:',''));
+      }));
+    } else if (searchSuggestion) {
+      searchSuggestion.hidden = true;
+      searchSuggestion.innerHTML = '';
+    }
+  }
+}
+
+// wire up search input and type filters on the page
+if (searchInput) {
+  const debounced = debounce((val) => performPageSearch(val), 180);
+  searchInput.addEventListener('input', (e) => debounced(e.target.value));
+  searchInput.addEventListener('blur', () => setTimeout(() => hideAutocomplete(), 150));
+}
+document.querySelectorAll('.search-type-filters .type-filter').forEach((b) => {
+  b.addEventListener('click', () => {
+    document.querySelectorAll('.search-type-filters .type-filter').forEach(x => x.classList.remove('active'));
+    b.classList.add('active');
+    const t = b.getAttribute('data-type');
+    _searchTypeFilter = t;
+    if (!t || t === 'All') {
+      // reset to initial search page state
+      if (searchInput) { searchInput.value = ''; }
+      currentSearchHighlightQuery = '';
+      clearSearchUI();
+      if (searchAreaGrid) searchAreaGrid.hidden = false;
+      return;
+    }
+    // For specific types, open the listings page showing only that type
+    (async () => {
+      const all = await gatherAllListings();
+      const filtered = all.filter(item => (item.type||'').toLowerCase() === t.toLowerCase());
+      listingsAreaTitle.textContent = `${t} listings`;
+      currentSearchHighlightQuery = t;
+      renderListingCards(filtered.map(item => ({ type: item.type, description: item.description, block: item.block, area: item.area, whatsapp: item.whatsapp, createdAt: item.createdAt })));
+      showListingsPage();
+      safePushState({ page: 'listings', area: `type:${t}` }, `#type-${t.toLowerCase()}`);
+    })();
+  });
+});
+
+// Handle Enter key on search input to open full listings when the query
+// clearly indicates a type or an area name.
+if (searchInput) {
+  searchInput.addEventListener('keydown', async (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      await handleSearchSubmit(searchInput.value.trim());
+    }
+  });
+}
+
+// Autocomplete dropdown for area names (simple, keyboard-light)
+let _autocompleteEl = null;
+function ensureAutocompleteEl() {
+  if (_autocompleteEl) return _autocompleteEl;
+  const parent = pageSearch || document.body;
+  const el = document.createElement('div');
+  el.id = 'searchAutocomplete';
+  el.className = 'search-autocomplete';
+  el.hidden = true;
+  parent.appendChild(el);
+  _autocompleteEl = el;
+  el.addEventListener('click', (e) => {
+    const it = e.target.closest('.autocomplete-item');
+    if (!it) return;
+    const val = it.getAttribute('data-value');
+    if (!val) return;
+    // If it's an exact area name, open area listings
+    const matched = AREAS.find(a => a.name.toLowerCase() === val.toLowerCase());
+    if (matched) {
+      openAreaListings(matched.name);
+    } else {
+      handleSearchSubmit(val);
+    }
+    hideAutocomplete();
+  });
+  return _autocompleteEl;
+}
+
+function hideAutocomplete(){ if (_autocompleteEl) { _autocompleteEl.innerHTML=''; _autocompleteEl.hidden=true; } }
+
+function getAreaSuggestions(q, limit=6){
+  if (!q || !q.trim()) return [];
+  const ql = q.toLowerCase();
+  const scores = AREAS.map(a=>{
+    const name = a.name;
+    const lower = name.toLowerCase();
+    let score = 999;
+    if (lower.startsWith(ql)) score = 0;
+    else if (lower.includes(ql)) score = 1;
+    else score = levenshtein(lower, ql);
+    return { name, score };
+  }).sort((a,b)=>a.score-b.score).slice(0,limit);
+  return scores.map(s=>s.name);
+}
+
+function showAutocompleteSuggestions(q){
+  const el = ensureAutocompleteEl();
+  const suggestions = getAreaSuggestions(q, 6);
+  if (!suggestions || suggestions.length === 0) { hideAutocomplete(); return; }
+  el.innerHTML = suggestions.map(s=>`<div class="autocomplete-item" data-value="${s}">${s}</div>`).join('');
+  el.hidden = false;
+}
+
+async function handleSearchSubmit(q) {
+  if (!q) return;
+  const ql = q.toLowerCase();
+
+  // map common type keywords to canonical types
+  const typeMap = {
+    apartment: 'Apartment',
+    apartments: 'Apartment',
+    room: 'Room',
+    rooms: 'Room',
+    partition: 'Partition',
+    partitions: 'Partition',
+    bedspace: 'Bedspace',
+    bedspaces: 'Bedspace',
+    roommate: 'Bedspace'
+  };
+
+  // exact or fuzzy area match first
+  let matchedArea = AREAS.find(a => a.name.toLowerCase() === ql) || AREAS.find(a => a.name.toLowerCase().includes(ql));
+  if (!matchedArea) {
+    // fuzzy check using levenshtein
+    let best = { name: null, dist: Infinity };
+    AREAS.forEach(a => {
+      const d = levenshtein(a.name.toLowerCase(), ql);
+      if (d < best.dist) best = { name: a.name, dist: d };
+    });
+    const thr = fuzzyThresholdFor(ql);
+    if (best.dist <= Math.max(1, thr)) matchedArea = { name: best.name };
+  }
+
+  if (matchedArea) {
+    openAreaListings(matchedArea.name);
+    return;
+  }
+
+  // type match
+  const mapped = typeMap[ql];
+  if (mapped) {
+    // gather listings and filter by type
+    const all = await gatherAllListings();
+    const filtered = all.filter(item => (item.type||'').toLowerCase() === mapped.toLowerCase());
+    // show listings page and render
+    listingsAreaTitle.textContent = `${mapped} listings`;
+    currentSearchHighlightQuery = mapped;
+    renderListingCards(filtered.map(item => ({
+      type: item.type,
+      description: item.description,
+      block: item.block,
+      area: item.area,
+      whatsapp: item.whatsapp,
+      createdAt: item.createdAt,
+    })));
+    showListingsPage();
+    safePushState({ page: 'listings', area: `type:${mapped}` }, `#type-${mapped.toLowerCase()}`);
+    return;
+  }
+
+  // fallback: run full search and if results found, open listings page with results
+  const all = await gatherAllListings();
+  const results = all.filter(item => {
+    const hay = `${item.area||''} ${item.type||''} ${item.description||''}`.toLowerCase();
+    if (hay.includes(ql)) return true;
+    const tokens = ql.split(/\s+/);
+    return tokens.some(t => (t.length<3) ? hay.includes(t) : hay.split(/\s+/).some(w=>levenshtein(w,t)<=2));
+  });
+  if (results && results.length > 0) {
+    listingsAreaTitle.textContent = `Search results for "${q}"`;
+    currentSearchHighlightQuery = q;
+    renderListingCards(results.map(item=>({ type: item.type, description: item.description, block: item.block, area: item.area, whatsapp: item.whatsapp, createdAt: item.createdAt })));
+    showListingsPage();
+    safePushState({ page: 'listings', area: `search:${encodeURIComponent(q)}` }, `#search-${encodeURIComponent(q)}`);
+    return;
+  }
+
+  // No results: show suggestion area (already handled by performPageSearch), so just run that
+  performPageSearch(q);
+}
+
 // Render demo data immediately so the page never looks empty while the
 // network request (if any) is in flight, then swap in live counts once
 // Supabase responds — and silently keep the demo data if it's not configured
 // or the request fails.
 renderAreas(buildAreasData(null));
+renderSearchAreas(buildAreasData(null));
 if (typeof fetchAreaCounts === "function" && typeof isSupabaseConfigured === "function" && isSupabaseConfigured()) {
   fetchAreaCounts()
     .then(({ data, error }) => {
-      if (!error && data) renderAreas(buildAreasData(data));
+      if (!error && data) {
+        renderAreas(buildAreasData(data));
+        renderSearchAreas(buildAreasData(data));
+      }
     })
     .catch(() => {
       /* stay on demo data */
@@ -203,6 +519,7 @@ function safeReplaceState(state, url) {
 const pageHome = document.getElementById("page-home");
 const pagePost = document.getElementById("page-post");
 const pageListings = document.getElementById("page-listings");
+const pageSearch = document.getElementById("page-search");
 const areaSelect = document.getElementById("areaSelect");
 const blockSelect = document.getElementById("blockSelect");
 const listingsAreaTitle = document.getElementById("listingsAreaTitle");
@@ -245,6 +562,7 @@ function hideAllPages() {
   pageHome.hidden = true;
   pagePost.hidden = true;
   pageListings.hidden = true;
+  if (pageSearch) pageSearch.hidden = true;
 }
 
 function showHome() {
@@ -265,10 +583,21 @@ function showListingsPage() {
   window.scrollTo({ top: 0, behavior: "instant" });
 }
 
+function showSearchPage() {
+  hideAllPages();
+  if (pageSearch) pageSearch.hidden = false;
+  window.scrollTo({ top: 0, behavior: "instant" });
+}
+
 function goToPost() {
   showPost();
   document.getElementById("reviewVeil").classList.remove("open");
   safePushState({ page: "post" }, "#post-room");
+}
+
+function goToSearch() {
+  showSearchPage();
+  safePushState({ page: "search" }, "#search");
 }
 
 function goToHome() {
@@ -296,11 +625,15 @@ function goBack() {
 }
 document.getElementById("postBackBtn").addEventListener("click", goBack);
 document.getElementById("listingsBackBtn").addEventListener("click", goBack);
+const searchBackBtn = document.getElementById("searchBackBtn");
+if (searchBackBtn) searchBackBtn.addEventListener("click", goBack);
 
 // Handles the browser/device back button, not just our own arrows.
 window.addEventListener("popstate", (e) => {
   if (e.state && e.state.page === "post") {
     showPost();
+  } else if (e.state && e.state.page === "search") {
+    showSearchPage();
   } else if (e.state && e.state.page === "listings") {
     showListingsPage();
     if (e.state.area) loadAreaListings(e.state.area);
@@ -480,7 +813,7 @@ if (location.hash === "#post-room") {
 document.querySelectorAll("[data-scroll-to]").forEach((btn) => {
   btn.addEventListener("click", (e) => {
     e.preventDefault();
-    openAreaOverlay();
+    goToSearch();
   });
 });
 
@@ -491,12 +824,15 @@ const overlayResults = document.getElementById("overlayResults");
 
 let _overlayPreviouslyFocused = null;
 let _overlayKeydownHandler = null;
+let _overlayState = 'areas'; // 'areas' or 'listings'
 
 function openAreaOverlay() {
   areaOverlay.hidden = false;
   areaOverlay.setAttribute('aria-hidden','false');
   renderOverlayAreas(AREAS);
   overlayResults.hidden = true;
+  overlayAreaGrid.hidden = false;
+  _overlayState = 'areas';
   // lock background scroll: store current scroll and fix body
   try {
     const sy = window.scrollY || window.pageYOffset || 0;
@@ -512,25 +848,7 @@ function openAreaOverlay() {
 
   // create a real search input in the overlay header so users can type
   const overlayTitle = document.getElementById('overlayTitle');
-  overlayTitle.innerHTML = '';
-  const input = document.createElement('input');
-  input.type = 'search';
-  input.id = 'overlaySearchInput';
-  input.placeholder = 'Search areas or keywords';
-  input.className = 'overlay-search-input';
-  overlayTitle.appendChild(input);
-  input.focus();
-
-  // listen for typing and perform the fuzzy search
-  input.addEventListener('input', (ev) => {
-    const q = ev.target.value.trim();
-    if (!q) {
-      overlayResults.hidden = true;
-      renderOverlayAreas(AREAS);
-      return;
-    }
-    performTextSearch(q);
-  });
+  renderOverlaySearchInput();
 
   // focus trap: handle Tab and Escape while overlay is open
   _overlayKeydownHandler = function(e) {
@@ -575,6 +893,15 @@ function closeAreaOverlay() {
 const areaOverlayBackBtn = document.getElementById("areaOverlayBack");
 if (areaOverlayBackBtn) {
   areaOverlayBackBtn.addEventListener('click', () => {
+    if (_overlayState === 'listings') {
+      // go back to the areas list inside the overlay
+      _overlayState = 'areas';
+      overlayResults.hidden = true;
+      overlayAreaGrid.hidden = false;
+      renderOverlayAreas(AREAS);
+      renderOverlaySearchInput();
+      return;
+    }
     closeAreaOverlay();
     goToHome();
   });
@@ -588,10 +915,58 @@ function renderOverlayAreas(list) {
     btn.type = 'button';
     btn.textContent = `${a.name} — ${a.open} open`;
     btn.addEventListener('click', () => {
-      closeAreaOverlay();
-      openAreaListings(a.name);
+      // show listings inside the overlay (borrow page-listings behaviour)
+      showOverlayListings(a.name);
     });
     overlayAreaGrid.appendChild(btn);
+  });
+}
+
+async function showOverlayListings(areaName) {
+  _overlayState = 'listings';
+  // update header title
+  const overlayTitle = document.getElementById('overlayTitle');
+  overlayTitle.innerHTML = `<div class="overlay-area-title">${areaName}</div>`;
+  // hide area list and show results pane
+  overlayAreaGrid.hidden = true;
+  overlayResults.hidden = false;
+
+  // render demo listings immediately, then try live rows
+  const demo = DEMO_LISTINGS[areaName] || [];
+  renderListingsToContainer(demo, overlayResults);
+
+  if (typeof fetchListingsByArea === 'function' && typeof isSupabaseConfigured === 'function' && isSupabaseConfigured()) {
+    try {
+      const { data, error } = await fetchListingsByArea(areaName);
+      if (!error && data) {
+        const mapped = data.map((row) => ({ type: row.type, description: row.description, block: row.block, area: row.area, whatsapp: row.whatsapp_e164, createdAt: row.created_at }));
+        renderListingsToContainer(mapped, overlayResults);
+      }
+    } catch (e) {}
+  }
+
+  // (no history push here to keep overlay behaviour isolated)
+}
+
+function renderOverlaySearchInput() {
+  const overlayTitle = document.getElementById('overlayTitle');
+  overlayTitle.innerHTML = '';
+  const input = document.createElement('input');
+  input.type = 'search';
+  input.id = 'overlaySearchInput';
+  input.placeholder = 'Search areas or keywords';
+  input.className = 'overlay-search-input';
+  overlayTitle.appendChild(input);
+  input.focus();
+
+  input.addEventListener('input', (ev) => {
+    const q = ev.target.value.trim();
+    if (!q) {
+      overlayResults.hidden = true;
+      renderOverlayAreas(AREAS);
+      return;
+    }
+    performTextSearch(q);
   });
 }
 
@@ -647,10 +1022,11 @@ function renderListingsToContainer(list, container) {
     const card = document.createElement('div');
     card.className = 'listing-card';
     const date = item.createdAt ? new Date(item.createdAt).toLocaleDateString('en-GB',{day:'numeric',month:'short'}) : 'insert date';
+    const desc = highlightText(item.description||'', currentSearchHighlightQuery);
     card.innerHTML = `
       <span class="listing-date">Posted on ${date}</span>
       ${item.type?`<span class="listing-type">${item.type}</span>`:''}
-      <p class="listing-desc">${item.description||''}</p>
+      <p class="listing-desc">${desc}</p>
       <div class="listing-meta">
         <span>${item.area||''}</span>
         <span>${item.block||''}</span>
@@ -753,10 +1129,11 @@ function renderListingCards(list) {
     card.className = "listing-card";
     const waNumber = item.whatsapp.replace(/[^\d]/g, "");
     const waText = encodeURIComponent(`Hi, I saw your listing on Kwetu Kuwait for a room in ${item.area || listingsAreaTitle.textContent}.`);
+    const desc = highlightText(item.description || '', currentSearchHighlightQuery);
     card.innerHTML = `
       <span class="listing-date">Posted on ${formatListingDate(item.createdAt)}</span>
       ${item.type ? `<span class="listing-type">${item.type}</span>` : ""}
-      <p class="listing-desc">${item.description}</p>
+      <p class="listing-desc">${desc}</p>
       <div class="listing-footer">
         <span class="listing-area">${item.area || listingsAreaTitle.textContent}</span>
         <span class="listing-sep">&middot;</span>

@@ -125,6 +125,51 @@ a { color: inherit; }
   align-items: center;
   justify-content: center;
   background: rgba(0,0,0,0.36);
+.overlay-area-grid {
+  width: min(320px, 38vw);
+  max-height: calc(86vh - 160px);
+  overflow: auto;
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 10px;
+  padding-right: 6px;
+}
+
+@media (max-width: 640px) {
+  .overlay-area-grid {
+    width: min(280px, 44vw);
+    max-height: calc(40vh);
+  }
+  .overlay-search-input {
+    width: 100%;
+    max-width: none;
+  }
+
+  /* Stack the back arrow above the header/search input on small screens */
+  .area-overlay-head {
+    position: relative;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+    /* make room for the absolute back button */
+    padding: 80px 16px 12px 16px;
+  }
+  .area-overlay-card .back-float {
+    position: absolute;
+    top: 12px;
+    left: 12px;
+    width: 36px;
+    height: 36px;
+    margin: 0;
+    align-self: auto;
+    box-shadow: 0 6px 16px rgba(36, 31, 27, 0.12);
+    z-index: 90;
+  }
+  .overlay-search-input { margin-top: 8px; position: relative; z-index: 1; }
+  .overlay-title {
+    justify-content: center;
+  }
+}
   z-index: 60;
 }
 .review-veil.open {
@@ -169,6 +214,7 @@ a { color: inherit; }
 .area-overlay-card { position: relative; }
 .area-overlay-head { display:flex; justify-content:center; align-items:center; padding:16px 20px; border-bottom:1px solid var(--line); }
 .overlay-title { display:flex; align-items:center; gap:12px; justify-content:center; width:100%; }
+.overlay-area-title { font-family: var(--font-display); font-weight: 600; font-size: 16px; }
 .overlay-title .btn { padding:10px 14px; }
 .brand-like { pointer-events:none; }
 .overlay-search-input { padding:10px 12px; border-radius:8px; border:1px solid var(--line); width:320px; }
@@ -186,8 +232,8 @@ a { color: inherit; }
 .area-overlay-body { display:flex; gap:16px; padding:16px; overflow:auto; }
 .area-overlay-body { -webkit-overflow-scrolling: touch; }
 .overlay-area-grid { width:320px; max-height:calc(86vh - 160px); overflow:auto; display:grid; grid-template-columns:1fr; gap:10px; padding-right:6px; }
-.overlay-area-grid button.area-card { text-align:left; padding:12px; border-radius:10px; background:var(--white); border:1px solid rgba(28,124,116,0.06); cursor:pointer; box-shadow: 0 6px 20px rgba(28,124,116,0.04); }
-.overlay-area-grid button.area-card:hover { box-shadow: 0 10px 28px rgba(28,124,116,0.10); transform: translateY(-3px); }
+.overlay-area-grid button.area-card { text-align:left; padding:12px; border-radius:10px; background:var(--white); border:1px solid var(--line); cursor:pointer; box-shadow: 0 6px 18px rgba(36,31,27,0.04); }
+.overlay-area-grid button.area-card:hover { box-shadow: 0 8px 22px rgba(36,31,27,0.06); transform: translateY(-2px); }
 .overlay-results { flex:1; max-height:calc(86vh - 160px); overflow:auto; padding-right:8px; }
 
 /* Listing card styles for overlay/results */
@@ -199,6 +245,26 @@ a { color: inherit; }
 .listing-meta { color:var(--amber); font-weight:700; margin-top:10px; display:flex; gap:12px; flex-wrap:wrap; }
 .listing-phone { text-decoration:none; border-bottom:2px solid transparent; padding-bottom:2px; }
 .listing-phone:hover { border-color:var(--amber); }
+
+/* Make area, block and phone bold + amber; phone gets thin underline on hover */
+.listing-footer .listing-area,
+.listing-footer .listing-block,
+.listing-meta span,
+.listing-phone {
+  color: var(--amber);
+  font-weight: 700;
+}
+.listing-phone {
+  text-decoration: none;
+  border-bottom: 1px solid transparent;
+  padding-bottom: 2px;
+  transition: border-color 0.15s ease;
+}
+.listing-phone:hover,
+.listing-phone:focus {
+  border-bottom-color: var(--amber);
+  text-decoration: none;
+}
 
 .brand-name { font-family: var(--font-display); font-weight: 600; font-size: 16px; }
 
@@ -341,6 +407,31 @@ h1 {
 }
 .flicker span { animation: flickerChar 5.5s infinite; animation-delay: calc(var(--d) * 60ms); }
 
+/* Autocomplete dropdown for search */
+#searchAutocomplete {
+  position: absolute;
+  left: 24px;
+  right: 24px;
+  max-width: 640px;
+  margin: 4px auto 0 auto;
+  background: var(--white);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  box-shadow: 0 12px 36px rgba(18,79,74,0.08);
+  z-index: 60;
+  overflow: hidden;
+}
+.search-autocomplete .autocomplete-item {
+  padding: 10px 14px;
+  cursor: pointer;
+  border-bottom: 1px solid rgba(36,31,27,0.04);
+}
+.search-autocomplete .autocomplete-item:last-child { border-bottom: none; }
+.search-autocomplete .autocomplete-item:hover { background: rgba(28,124,116,0.04); }
+
+/* Highlight matched tokens */
+.listing-desc mark { background: #FFF1B8; color: inherit; padding: 0 2px; border-radius: 2px; }
+
 /* Posting and search overview. */
 .how { padding: 72px 0; border-top: 1px solid var(--line); }
 .how h2 { font-size: 26px; margin-bottom: 32px; }
@@ -449,6 +540,24 @@ h1 {
 .page[hidden] { display: none !important; }
 
 .page-post { background: var(--sand); min-height: 100vh; }
+
+/* Search page shares post page layout */
+.page-search { background: var(--sand); min-height: 100vh; }
+.page-search-body { max-width: 720px; padding: 24px 24px 90px; }
+.search-area-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 14px; }
+.search-area-card { background: var(--white); border-radius: var(--radius); padding: 18px; text-decoration: none; color: var(--ink); cursor: pointer; transition: transform 0.15s ease, box-shadow 0.15s ease; border: 1px solid rgba(28,124,116,0.08); box-shadow: 0 8px 24px rgba(28,124,116,0.06); }
+.search-area-card:hover { transform: translateY(-4px); box-shadow: 0 14px 36px rgba(28,124,116,0.12); }
+.search-area-card .area-card-name { font-family: var(--font-display); font-weight: 600; font-size: 16px; display: block; }
+.search-area-card .area-card-count { font-family: var(--font-mono); font-size: 12px; color: var(--ink-soft); }
+
+/* Search input and results */
+.page-search-input { width: 100%; box-sizing: border-box; margin-bottom: 12px; }
+.search-head { display:flex; flex-direction:column; gap:8px; margin-bottom: 12px; }
+.search-type-filters { display:flex; gap:8px; flex-wrap:wrap; }
+.search-results { margin-top: 12px; }
+.search-suggestion { margin-top: 10px; font-size: 14px; color: var(--ink-soft); }
+.search-suggestion button { background: none; border: none; color: var(--teal-deep); font-weight:700; cursor:pointer; text-decoration:underline; }
+
 
 .page-topbar {
   position: sticky;

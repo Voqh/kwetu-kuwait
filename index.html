@@ -234,6 +234,32 @@
   </div>
 </section>
 
+<!-- SEARCH PAGE — opens like the Post page so it floats and back navigation works -->
+<section id="page-search" class="page page-search" hidden>
+  <button class="back-float" id="searchBackBtn" aria-label="Back to home">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+      <polyline points="15 18 9 12 15 6"></polyline>
+    </svg>
+  </button>
+
+  <div class="wrap page-search-body">
+    <div class="search-head">
+      <label for="searchInput" class="visually-hidden">Search areas or types</label>
+      <input id="searchInput" class="overlay-search-input page-search-input" type="search" placeholder="Search areas or types (e.g. Salmiya, Room, Apartment)">
+      <div class="type-filters search-type-filters">
+        <button class="type-filter" data-type="All">All</button>
+        <button class="type-filter" data-type="Apartment">Apartment</button>
+        <button class="type-filter" data-type="Room">Room</button>
+        <button class="type-filter" data-type="Partition">Partition</button>
+        <button class="type-filter" data-type="Bedspace">Bedspace</button>
+      </div>
+    </div>
+    <div id="searchAreaGrid" class="area-grid search-area-grid"><!-- injected by app.js --></div>
+    <div id="searchResults" class="search-results" hidden></div>
+    <div id="searchSuggestion" class="search-suggestion" hidden></div>
+  </div>
+</section>
+
 <!-- AREA / TYPE SEARCH OVERLAY -->
 <div id="areaOverlay" class="area-overlay" hidden aria-hidden="true">
   <div class="area-overlay-card" role="dialog" aria-modal="true" aria-labelledby="overlayHeading">
