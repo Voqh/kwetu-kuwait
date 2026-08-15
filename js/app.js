@@ -476,11 +476,223 @@ if (location.hash === "#post-room") {
 }
 
 // ---- Search for a room -> scroll to area grid ----
+// Override the old scroll-to behavior: open overlay for search
 document.querySelectorAll("[data-scroll-to]").forEach((btn) => {
-  btn.addEventListener("click", () => {
-    document.getElementById("board-areas").scrollIntoView({ behavior: "smooth" });
+  btn.addEventListener("click", (e) => {
+    e.preventDefault();
+    openAreaOverlay();
   });
 });
+
+// --- Area overlay logic ---
+const areaOverlay = document.getElementById("areaOverlay");
+const overlayAreaGrid = document.getElementById("overlayAreaGrid");
+const overlayResults = document.getElementById("overlayResults");
+
+let _overlayPreviouslyFocused = null;
+let _overlayKeydownHandler = null;
+
+function openAreaOverlay() {
+  areaOverlay.hidden = false;
+  areaOverlay.setAttribute('aria-hidden','false');
+  renderOverlayAreas(AREAS);
+  overlayResults.hidden = true;
+  // lock background scroll: store current scroll and fix body
+  try {
+    const sy = window.scrollY || window.pageYOffset || 0;
+    document.body.dataset.prevScroll = String(sy);
+    document.body.style.position = 'fixed';
+    document.body.style.top = `-${sy}px`;
+    document.body.style.left = '0';
+    document.body.style.right = '0';
+  } catch (e) {}
+
+  // store previously focused element so we can restore on close
+  try { _overlayPreviouslyFocused = document.activeElement; } catch (e) { _overlayPreviouslyFocused = null; }
+
+  // create a real search input in the overlay header so users can type
+  const overlayTitle = document.getElementById('overlayTitle');
+  overlayTitle.innerHTML = '';
+  const input = document.createElement('input');
+  input.type = 'search';
+  input.id = 'overlaySearchInput';
+  input.placeholder = 'Search areas or keywords';
+  input.className = 'overlay-search-input';
+  overlayTitle.appendChild(input);
+  input.focus();
+
+  // listen for typing and perform the fuzzy search
+  input.addEventListener('input', (ev) => {
+    const q = ev.target.value.trim();
+    if (!q) {
+      overlayResults.hidden = true;
+      renderOverlayAreas(AREAS);
+      return;
+    }
+    performTextSearch(q);
+  });
+
+  // focus trap: handle Tab and Escape while overlay is open
+  _overlayKeydownHandler = function(e) {
+    if (e.key === 'Escape') { closeAreaOverlay(); return; }
+    if (e.key !== 'Tab') return;
+    const focusable = areaOverlay.querySelectorAll('a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])');
+    const nodes = Array.from(focusable).filter(n => n.offsetParent !== null);
+    if (nodes.length === 0) return;
+    let idx = nodes.indexOf(document.activeElement);
+    if (e.shiftKey) {
+      if (idx === -1 || idx === 0) { nodes[nodes.length - 1].focus(); e.preventDefault(); }
+    } else {
+      if (idx === -1 || idx === nodes.length - 1) { nodes[0].focus(); e.preventDefault(); }
+    }
+  };
+  document.addEventListener('keydown', _overlayKeydownHandler);
+}
+
+function closeAreaOverlay() {
+  areaOverlay.hidden = true;
+  areaOverlay.setAttribute('aria-hidden','true');
+  // restore page scroll
+  try {
+    const prev = Number(document.body.dataset.prevScroll || 0);
+    document.body.style.position = '';
+    document.body.style.top = '';
+    document.body.style.left = '';
+    document.body.style.right = '';
+    delete document.body.dataset.prevScroll;
+    window.scrollTo(0, prev);
+  } catch (e) {}
+  // remove focus trap and restore focus
+  try {
+    if (_overlayKeydownHandler) document.removeEventListener('keydown', _overlayKeydownHandler);
+    _overlayKeydownHandler = null;
+    if (_overlayPreviouslyFocused && typeof _overlayPreviouslyFocused.focus === 'function') _overlayPreviouslyFocused.focus();
+    _overlayPreviouslyFocused = null;
+  } catch (e) {}
+}
+
+// area overlay back button (replaces the close X)
+const areaOverlayBackBtn = document.getElementById("areaOverlayBack");
+if (areaOverlayBackBtn) {
+  areaOverlayBackBtn.addEventListener('click', () => {
+    closeAreaOverlay();
+    goToHome();
+  });
+}
+
+function renderOverlayAreas(list) {
+  overlayAreaGrid.innerHTML = "";
+  list.forEach((a) => {
+    const btn = document.createElement('button');
+    btn.className = 'area-card';
+    btn.type = 'button';
+    btn.textContent = `${a.name} — ${a.open} open`;
+    btn.addEventListener('click', () => {
+      closeAreaOverlay();
+      openAreaListings(a.name);
+    });
+    overlayAreaGrid.appendChild(btn);
+  });
+}
+
+// Type filter buttons
+document.querySelectorAll('.type-filter').forEach((b) => {
+  b.addEventListener('click', () => {
+    document.querySelectorAll('.type-filter').forEach(x=>x.classList.remove('active'));
+    b.classList.add('active');
+    const t = b.getAttribute('data-type');
+    if (t === 'All') {
+      overlayResults.hidden = true;
+      renderOverlayAreas(AREAS);
+    } else {
+      performTypeSearch(t);
+    }
+  });
+});
+
+// Note: search input is created dynamically inside `openAreaOverlay`
+
+// Helper: flatten listings from DEMO and (if available) Supabase
+async function gatherAllListings() {
+  let all = [];
+  // include demo listings
+  Object.keys(DEMO_LISTINGS).forEach(area => {
+    (DEMO_LISTINGS[area]||[]).forEach(item => {
+      all.push(Object.assign({ area }, item));
+    });
+  });
+  // include live listings if Supabase configured
+  if (typeof fetchActiveListings === 'function' && typeof isSupabaseConfigured === 'function' && isSupabaseConfigured()) {
+    try {
+      const { data, error } = await fetchActiveListings();
+      if (!error && data) {
+        data.forEach(row => {
+          all.push({ area: row.area, type: row.type, description: row.description, block: row.block, whatsapp: row.whatsapp_e164, createdAt: row.created_at });
+        });
+      }
+    } catch (e) {}
+  }
+  return all;
+}
+
+// render listings into overlayResults
+function renderListingsToContainer(list, container) {
+  container.innerHTML = '';
+  if (!list || list.length === 0) {
+    container.innerHTML = '<p class="listings-empty">No listings found.</p>';
+    container.hidden = false;
+    return;
+  }
+  list.forEach(item => {
+    const card = document.createElement('div');
+    card.className = 'listing-card';
+    const date = item.createdAt ? new Date(item.createdAt).toLocaleDateString('en-GB',{day:'numeric',month:'short'}) : 'insert date';
+    card.innerHTML = `
+      <span class="listing-date">Posted on ${date}</span>
+      ${item.type?`<span class="listing-type">${item.type}</span>`:''}
+      <p class="listing-desc">${item.description||''}</p>
+      <div class="listing-meta">
+        <span>${item.area||''}</span>
+        <span>${item.block||''}</span>
+        <a class="listing-phone" href="https://wa.me/${(item.whatsapp||'').replace(/\D/g,'')}" target="_blank" rel="noopener">${item.whatsapp||''}</a>
+      </div>
+    `;
+    container.appendChild(card);
+  });
+  container.hidden = false;
+}
+
+// fuzzy matching helper (Levenshtein)
+function levenshtein(a,b){
+  if(!a||!b) return (a||b)?Math.max(a.length,b.length):0;
+  a=a.toLowerCase(); b=b.toLowerCase();
+  const m=a.length,n=b.length; const dp=Array(m+1).fill().map(()=>Array(n+1).fill(0));
+  for(let i=0;i<=m;i++)dp[i][0]=i; for(let j=0;j<=n;j++)dp[0][j]=j;
+  for(let i=1;i<=m;i++) for(let j=1;j<=n;j++) dp[i][j]=Math.min(dp[i-1][j]+1, dp[i][j-1]+1, dp[i-1][j-1]+(a[i-1]===b[j-1]?0:1));
+  return dp[m][n];
+}
+
+async function performTextSearch(q){
+  const all = await gatherAllListings();
+  const results = all.filter(item=>{
+    const hay = `${item.area||''} ${item.type||''} ${item.description||''}`.toLowerCase();
+    if(hay.includes(q.toLowerCase())) return true;
+    // check each token in query against hay with small levenshtein
+    const tokens = q.toLowerCase().split(/\s+/);
+    return tokens.some(t=>{
+      if(t.length<3) return hay.includes(t);
+      // find closest word in hay
+      return hay.split(/\s+/).some(w=>levenshtein(w,t)<=2);
+    });
+  });
+  renderListingsToContainer(results, overlayResults);
+}
+
+async function performTypeSearch(type){
+  const all = await gatherAllListings();
+  const results = all.filter(item=> (item.type||'').toLowerCase() === type.toLowerCase());
+  renderListingsToContainer(results, overlayResults);
+}
 
 // ---- "How it works" cards: clickable shortcuts to Post / Search ----
 const howPostCard = document.getElementById("howPostCard");
