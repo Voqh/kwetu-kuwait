@@ -117,6 +117,34 @@ a { color: inherit; }
   display: block;
 }
 
+/* Review overlay (review-veil) */
+.review-veil {
+  position: fixed;
+  inset: 0;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0,0,0,0.36);
+  z-index: 60;
+}
+.review-veil.open {
+  display: flex;
+}
+.review-modal {
+  background: var(--white);
+  color: var(--ink);
+  border-radius: 12px;
+  padding: 20px 22px;
+  max-width: 520px;
+  width: calc(100% - 48px);
+  box-shadow: 0 20px 48px rgba(0,0,0,0.18);
+}
+.review-list { margin: 12px 0 16px; }
+.review-row { display:flex; gap:12px; margin:8px 0; }
+.review-row dt { width: 100px; font-weight:600; }
+.review-row dd { margin:0; }
+.review-actions { display:flex; gap:12px; justify-content:flex-end; margin-top:12px; }
+
 .brand-name { font-family: var(--font-display); font-weight: 600; font-size: 16px; }
 
 .brand-text { display: flex; flex-direction: column; line-height: 1.2; }
