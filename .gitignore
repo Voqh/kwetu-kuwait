@@ -1,1 +1,11 @@
-.tools/node/bin/node
+# Ignore entire .tools directory (contains large node binaries)
+.tools/
+
+# Ignore node_modules and other common large/temporary directories
+node_modules/
+dist/
+build/
+*.log
+.DS_Store
+.env.local
+.env*.local
