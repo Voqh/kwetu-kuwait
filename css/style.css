@@ -246,13 +246,13 @@ a { color: inherit; }
 .listing-phone { text-decoration:none; border-bottom:2px solid transparent; padding-bottom:2px; }
 .listing-phone:hover { border-color:var(--amber); }
 
-/* Make area, block and phone bold + amber; phone gets thin underline on hover */
+/* Area, block and phone: amber accent, normal weight (not bold) */
 .listing-footer .listing-area,
 .listing-footer .listing-block,
 .listing-meta span,
 .listing-phone {
   color: var(--amber);
-  font-weight: 700;
+  font-weight: 400;
 }
 .listing-phone {
   text-decoration: none;
@@ -264,6 +264,13 @@ a { color: inherit; }
 .listing-phone:focus {
   border-bottom-color: var(--amber);
   text-decoration: none;
+}
+
+/* Rent: only rendered when a listing has one, amber accent to match price emphasis */
+.listing-rent {
+  color: var(--amber);
+  font-weight: 600;
+  font-family: var(--font-mono);
 }
 
 .brand-name { font-family: var(--font-display); font-weight: 600; font-size: 16px; }
@@ -535,6 +542,8 @@ h1 {
   font-family: var(--font-mono);
 }
 .footer-dot { color: var(--line); }
+.footer-contact { color: var(--teal); text-decoration: none; border-bottom: 1px solid transparent; transition: border-color 0.15s ease; }
+.footer-contact:hover, .footer-contact:focus { border-bottom-color: var(--teal); }
 
 /* Shows only the active page view. */
 .page[hidden] { display: none !important; }

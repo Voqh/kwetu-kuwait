@@ -7,7 +7,7 @@ create table if not exists listings (
   block         text,
   type          text check (type in ('Apartment', 'Room', 'Partition', 'Bedspace')),
   description   text,
-  rent_kwd      numeric not null check (rent_kwd >= 0),
+  rent_kwd      numeric check (rent_kwd is null or rent_kwd >= 0),
   whatsapp_e164 text not null,
   status        text not null default 'active' check (status in ('active', 'reported')),
   created_at    timestamptz not null default now(),
@@ -71,9 +71,11 @@ begin
   if length(p_edit_token) < 64 then
     raise exception 'Invalid edit token';
   end if;
-  if nullif(btrim(p_area), '') is null or nullif(btrim(p_block), '') is null
-    or char_length(p_area) > 80 or char_length(p_block) > 80 then
-    raise exception 'Area and block are required';
+  if nullif(btrim(p_area), '') is null or char_length(p_area) > 80 then
+    raise exception 'Area is required';
+  end if;
+  if char_length(coalesce(p_block, '')) > 80 then
+    raise exception 'Block is too long';
   end if;
   if nullif(btrim(p_type), '') is null and nullif(btrim(p_description), '') is null then
     raise exception 'A type or description is required';
@@ -81,7 +83,7 @@ begin
   if char_length(coalesce(p_description, '')) > 1000 then
     raise exception 'Description is too long';
   end if;
-  if p_rent_kwd is null or p_rent_kwd < 0 or p_rent_kwd <> round(p_rent_kwd, 3) then
+  if p_rent_kwd is not null and (p_rent_kwd < 0 or p_rent_kwd <> round(p_rent_kwd, 3)) then
     raise exception 'Invalid KWD price';
   end if;
   if p_whatsapp_e164 !~ '^\+[1-9][0-9]{5,14}$' then
@@ -90,7 +92,7 @@ begin
 
   insert into listings (area, block, type, description, rent_kwd, whatsapp_e164)
   values (
-    btrim(p_area), btrim(p_block), nullif(btrim(p_type), ''),
+    btrim(p_area), nullif(btrim(p_block), ''), nullif(btrim(p_type), ''),
     nullif(btrim(p_description), ''), p_rent_kwd, p_whatsapp_e164
   )
   returning * into new_listing;
@@ -161,9 +163,11 @@ as $$
 declare
   updated_listing listings%rowtype;
 begin
-  if nullif(btrim(p_area), '') is null or nullif(btrim(p_block), '') is null
-    or char_length(p_area) > 80 or char_length(p_block) > 80 then
-    raise exception 'Area and block are required';
+  if nullif(btrim(p_area), '') is null or char_length(p_area) > 80 then
+    raise exception 'Area is required';
+  end if;
+  if char_length(coalesce(p_block, '')) > 80 then
+    raise exception 'Block is too long';
   end if;
   if nullif(btrim(p_type), '') is null and nullif(btrim(p_description), '') is null then
     raise exception 'A type or description is required';
@@ -171,7 +175,7 @@ begin
   if char_length(coalesce(p_description, '')) > 1000 then
     raise exception 'Description is too long';
   end if;
-  if p_rent_kwd is null or p_rent_kwd < 0 or p_rent_kwd <> round(p_rent_kwd, 3) then
+  if p_rent_kwd is not null and (p_rent_kwd < 0 or p_rent_kwd <> round(p_rent_kwd, 3)) then
     raise exception 'Invalid KWD price';
   end if;
   if p_whatsapp_e164 !~ '^\+[1-9][0-9]{5,14}$' then
@@ -181,7 +185,7 @@ begin
   update listings as l
   set
     area = btrim(p_area),
-    block = btrim(p_block),
+    block = nullif(btrim(p_block), ''),
     type = nullif(btrim(p_type), ''),
     description = nullif(btrim(p_description), ''),
     rent_kwd = p_rent_kwd,

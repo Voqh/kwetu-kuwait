@@ -1,18 +1,21 @@
-// ---- Kuwait areas + placeholder open-listing counts ----
+// ---- Kuwait areas ----
+// Area names are static frontend config (not stored in the DB). Open
+// counts start at 0 and are filled in live from Supabase — see the call
+// to fetchAreaCounts() further down.
 const AREAS = [
-  { name: "Salmiya",    open: 14, status: "open" },
-  { name: "Hawally",    open: 9,  status: "open" },
-  { name: "Farwaniya",  open: 3,  status: "few"  },
-  { name: "Jabriya",    open: 6,  status: "open" },
-  { name: "Fahaheel",   open: 0,  status: "full" },
-  { name: "Mangaf",     open: 5,  status: "open" },
-  { name: "Khaitan",    open: 2,  status: "few"  },
-  { name: "Abbasiya",   open: 7,  status: "open" },
-  { name: "Jleeb Al-Shuyoukh", open: 4, status: "open" },
-  { name: "Mahboula",   open: 6,  status: "open" },
-  { name: "Fintas",     open: 1,  status: "few"  },
-  { name: "Abu Halifa", open: 0,  status: "full" },
-  { name: "Riggae",     open: 3,  status: "few"  },
+  { name: "Salmiya",    open: 0, status: "full" },
+  { name: "Hawally",    open: 0, status: "full" },
+  { name: "Farwaniya",  open: 0, status: "full" },
+  { name: "Jabriya",    open: 0, status: "full" },
+  { name: "Fahaheel",   open: 0, status: "full" },
+  { name: "Mangaf",     open: 0, status: "full" },
+  { name: "Khaitan",    open: 0, status: "full" },
+  { name: "Abbasiya",   open: 0, status: "full" },
+  { name: "Jleeb Al-Shuyoukh", open: 0, status: "full" },
+  { name: "Mahboula",   open: 0, status: "full" },
+  { name: "Fintas",     open: 0, status: "full" },
+  { name: "Abu Halifa", open: 0, status: "full" },
+  { name: "Riggae",     open: 0, status: "full" },
 ];
 
 // ---- Blocks per area (Kuwait addresses are organised by block/qita'a) ----
@@ -30,44 +33,6 @@ const AREA_BLOCKS = {
   Fintas: ["Block 1", "Block 2", "Block 3", "Block 4"],
   "Abu Halifa": ["Block 1", "Block 2", "Block 3", "Block 4"],
   Riggae: ["Block 1", "Block 2", "Block 3"],
-  Other: [],
-};
-
-// ---- Demo listings (fallback shown until/unless Supabase has real rows) ----
-const DEMO_LISTINGS = {
-  Salmiya: [
-    { type: "Room", description: "Room available near Lulu Hyper, 10 mins walk from bus stop. Shared kitchen, quiet building, ladies floor only.", block: "Block 3", whatsapp: "+254700123456", createdAt: "2026-08-11" },
-    { type: "Partition", description: "Spacious partition in a 2BHK, close to the Salmiya corniche. Good for a working single tenant, own space with curtain divider.", block: "Block 9", whatsapp: "+96550098765", createdAt: "2026-08-08" },
-  ],
-  Hawally: [
-    { type: "Bedspace", description: "Bedspace in a shared room, 3 tenants, walking distance to Hawally co-op. Utilities included, flexible move-in date.", block: "Block 2", whatsapp: "+254722334455", createdAt: "2026-08-12" },
-  ],
-  Farwaniya: [
-    { type: "Apartment", description: "Full room in a family building, near the main souq. AC and wardrobe included, prefer working professional.", block: "Block 4", whatsapp: "+96551122334", createdAt: "2026-08-05" },
-  ],
-  Jabriya: [
-    { type: "Partition", description: "Partition space close to the university area, quiet street, good for students. Wifi included.", block: "Block 10", whatsapp: "+254733445566", createdAt: "2026-08-13" },
-    { type: "Apartment", description: "Apartment room to share, modern building with lift, 5 mins to the block 9 mosque.", block: "Block 12", whatsapp: "+96552233445", createdAt: "2026-08-09" },
-  ],
-  Fahaheel: [],
-  Mangaf: [
-    { type: "Room", description: "Room near the Mangaf co-op, sea view balcony, shared with one other tenant. Serious inquiries only please.", block: "Block 5", whatsapp: "+254744556677", createdAt: "2026-08-10" },
-  ],
-  Khaitan: [
-    { type: "Bedspace", description: "Bedspace available in a clean, quiet apartment. Close to public transport, ideal for shift workers.", block: "Block 3", whatsapp: "+96553344556", createdAt: "2026-08-07" },
-  ],
-  Abbasiya: [
-    { type: "Bedspace", description: "Bedspace in a shared flat near Abbasiya market, popular with a mixed international crowd. Close to public transport links.", block: "Block 3", whatsapp: "+254755667788", createdAt: "2026-08-06" },
-  ],
-  "Jleeb Al-Shuyoukh": [
-    { type: "Room", description: "Room in a busy residential block, walking distance to the main Jleeb market. Budget-friendly, shared bathroom.", block: "Block 2", whatsapp: "+96554455667", createdAt: "2026-08-13" },
-  ],
-  Mahboula: [
-    { type: "Partition", description: "Partition close to the Mahboula co-op, quiet building, easy access to Fahaheel Expressway. Good for shift workers.", block: "Block 4", whatsapp: "+254766778899", createdAt: "2026-08-12" },
-  ],
-  Fintas: [],
-  "Abu Halifa": [],
-  Riggae: [],
   Other: [],
 };
 
@@ -755,11 +720,9 @@ document.getElementById("reviewConfirmBtn").addEventListener("click", async () =
     }, 900);
   };
 
-  // Not wired to a backend yet — keep the original demo confirmation so the
-  // form remains fully testable before Supabase credentials are added.
-  if (typeof isSupabaseConfigured !== "function" || !isSupabaseConfigured()) {
-    confirmBtn.textContent = "Listing posted ✓";
-    goBackShortly();
+  if (typeof isSupabaseConfigured !== "function" || !isSupabaseConfigured() || typeof createListing !== "function") {
+    postFormNote.textContent = "Couldn't connect to the listings database — please try again shortly.";
+    postFormNote.style.color = "#C97878";
     return;
   }
 
@@ -769,7 +732,7 @@ document.getElementById("reviewConfirmBtn").addEventListener("click", async () =
   confirmBtn.disabled = true;
   confirmBtn.textContent = "Publishing…";
 
-  const { error } = await createListing({
+  const { data, error } = await createListing({
     area: areaSelect.value,
     block: blockSelect.value || null,
     type: document.getElementById("typeSelect").value,
@@ -784,6 +747,19 @@ document.getElementById("reviewConfirmBtn").addEventListener("click", async () =
     postFormNote.textContent = "Something went wrong publishing your listing — please try again.";
     postFormNote.style.color = "#C97878";
     return;
+  }
+
+  // Remember this listing's id + edit token locally so its owner can edit
+  // it later — this is the only place the raw token ever exists outside
+  // the moment it was generated.
+  if (data && data.id && data.editToken) {
+    try {
+      const store = JSON.parse(localStorage.getItem("kwetu_edit_tokens_v1") || "{}");
+      store[data.id] = data.editToken;
+      localStorage.setItem("kwetu_edit_tokens_v1", JSON.stringify(store));
+    } catch (e) {
+      /* localStorage unavailable — listing still published, just not editable later */
+    }
   }
 
   confirmBtn.textContent = "Listing posted ✓";
@@ -931,18 +907,22 @@ async function showOverlayListings(areaName) {
   overlayAreaGrid.hidden = true;
   overlayResults.hidden = false;
 
-  // render demo listings immediately, then try live rows
-  const demo = DEMO_LISTINGS[areaName] || [];
-  renderListingsToContainer(demo, overlayResults);
+  overlayResults.innerHTML = `<p class="listings-empty">Loading listings…</p>`;
 
   if (typeof fetchListingsByArea === 'function' && typeof isSupabaseConfigured === 'function' && isSupabaseConfigured()) {
     try {
       const { data, error } = await fetchListingsByArea(areaName);
-      if (!error && data) {
-        const mapped = data.map((row) => ({ type: row.type, description: row.description, block: row.block, area: row.area, whatsapp: row.whatsapp_e164, createdAt: row.created_at }));
-        renderListingsToContainer(mapped, overlayResults);
+      if (error) {
+        overlayResults.innerHTML = `<p class="listings-empty">Couldn't load listings right now.</p>`;
+        return;
       }
-    } catch (e) {}
+      const mapped = (data || []).map((row) => ({ id: row.id, type: row.type, description: row.description, block: row.block, area: row.area, rentKwd: row.rent_kwd, whatsapp: row.whatsapp_e164, createdAt: row.created_at }));
+      renderListingsToContainer(mapped, overlayResults);
+    } catch (e) {
+      overlayResults.innerHTML = `<p class="listings-empty">Couldn't load listings right now.</p>`;
+    }
+  } else {
+    overlayResults.innerHTML = `<p class="listings-empty">Couldn't connect to the listings database.</p>`;
   }
 
   // (no history push here to keep overlay behaviour isolated)
@@ -987,22 +967,16 @@ document.querySelectorAll('.type-filter').forEach((b) => {
 
 // Note: search input is created dynamically inside `openAreaOverlay`
 
-// Helper: flatten listings from DEMO and (if available) Supabase
+// Reads every active listing straight from Supabase. No demo data — an
+// empty or unreachable database just means an empty result set.
 async function gatherAllListings() {
   let all = [];
-  // include demo listings
-  Object.keys(DEMO_LISTINGS).forEach(area => {
-    (DEMO_LISTINGS[area]||[]).forEach(item => {
-      all.push(Object.assign({ area }, item));
-    });
-  });
-  // include live listings if Supabase configured
   if (typeof fetchActiveListings === 'function' && typeof isSupabaseConfigured === 'function' && isSupabaseConfigured()) {
     try {
       const { data, error } = await fetchActiveListings();
       if (!error && data) {
         data.forEach(row => {
-          all.push({ area: row.area, type: row.type, description: row.description, block: row.block, whatsapp: row.whatsapp_e164, createdAt: row.created_at });
+          all.push({ id: row.id, area: row.area, type: row.type, description: row.description, block: row.block, rentKwd: row.rent_kwd, whatsapp: row.whatsapp_e164, createdAt: row.created_at });
         });
       }
     } catch (e) {}
@@ -1030,6 +1004,7 @@ function renderListingsToContainer(list, container) {
       <div class="listing-meta">
         <span>${item.area||''}</span>
         <span>${item.block||''}</span>
+        ${item.rentKwd != null ? `<span class="listing-rent">${item.rentKwd} KD/month</span>` : ''}
         <a class="listing-phone" href="https://wa.me/${(item.whatsapp||'').replace(/\D/g,'')}" target="_blank" rel="noopener">${item.whatsapp||''}</a>
       </div>
     `;
@@ -1138,6 +1113,7 @@ function renderListingCards(list) {
         <span class="listing-area">${item.area || listingsAreaTitle.textContent}</span>
         <span class="listing-sep">&middot;</span>
         <span class="listing-block">${item.block || "Block not listed"}</span>
+        ${item.rentKwd != null ? `<span class="listing-sep">&middot;</span><span class="listing-rent">${item.rentKwd} KD/month</span>` : ''}
         <span class="listing-sep">&middot;</span>
         <a class="listing-phone" href="https://wa.me/${waNumber}?text=${waText}" target="_blank" rel="noopener">${item.whatsapp}</a>
       </div>
@@ -1154,31 +1130,36 @@ function renderListingCards(list) {
   listingsGrid.querySelectorAll(".listing-card").forEach((c) => listingsObserver.observe(c));
 }
 
-// Shows demo data immediately (so the page is never empty while a network
-// request is in flight), then swaps in real Supabase rows if configured.
+// Reads listings for one area straight from Supabase — no demo/fallback
+// data. Shows a loading state while the request is in flight.
 async function loadAreaListings(areaName) {
   listingsAreaTitle.textContent = areaName;
-  renderListingCards(DEMO_LISTINGS[areaName] || []);
+  listingsGrid.innerHTML = `<p class="listings-empty">Loading listings…</p>`;
 
   if (typeof fetchListingsByArea !== "function" || typeof isSupabaseConfigured !== "function" || !isSupabaseConfigured()) {
+    listingsGrid.innerHTML = `<p class="listings-empty">Couldn't connect to the listings database. Please try again shortly.</p>`;
     return;
   }
   try {
     const { data, error } = await fetchListingsByArea(areaName);
-    if (!error && data && data.length > 0) {
-      renderListingCards(
-        data.map((row) => ({
-          type: row.type,
-          description: row.description,
-          block: row.block,
-          area: row.area,
-          whatsapp: row.whatsapp_e164,
-          createdAt: row.created_at,
-        }))
-      );
+    if (error) {
+      listingsGrid.innerHTML = `<p class="listings-empty">Couldn't load listings right now. Please try again shortly.</p>`;
+      return;
     }
+    renderListingCards(
+      (data || []).map((row) => ({
+        id: row.id,
+        type: row.type,
+        description: row.description,
+        block: row.block,
+        area: row.area,
+        rentKwd: row.rent_kwd,
+        whatsapp: row.whatsapp_e164,
+        createdAt: row.created_at,
+      }))
+    );
   } catch (e) {
-    /* stay on demo data */
+    listingsGrid.innerHTML = `<p class="listings-empty">Couldn't load listings right now. Please try again shortly.</p>`;
   }
 }
 
