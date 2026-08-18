@@ -28,5 +28,38 @@ kwetu-kuwait/
 └── schema.sql            # Database schema + Row Level Security policies
 How the backend works
 
+Supabase provides a hosted Postgres database with an auto-generated REST API. The frontend talks to it exclusively through supabase-client.js.
 
+The public API key committed in this repo is a publishable key (sb_publishable_...), which is designed to be safely exposed in client-side code. Actual protection is enforced at the database level via Row Level Security (RLS):
+
+Anonymous insert — anyone can create a new listing, no login needed.
+Active-and-non-expired select — anyone can read listings, but only ones marked active and less than 30 days old.
+
+This means the 30-day expiry isn't a background job — it's simply part of what the RLS policy considers "visible," so old listings quietly stop appearing without any cleanup process.
+
+Getting started (local development)
+Clone this repo.
+Open index.html directly in a browser, or serve the folder with any static file server.
+Supabase credentials are already wired in supabase-client.js. If you're setting up your own Supabase project, run schema.sql in the Supabase SQL editor first, then swap in your own project URL and publishable key.
+Status
+
+🚧 Actively in development. Not yet deployed to a public URL.
+
+Roadmap
+ Deploy to a live public URL
+ Phone number validation and WhatsApp deep-link handling
+ Finalize status field design (drives both expiry and reporting)
+ Finalize country-code handling for WhatsApp links (used to construct wa.me links, not stored)
+License
+
+TBD.
+
+Recommendations
+- **Server-side edit-window enforcement:** The client shows a 2-minute edit window; enforce this in Postgres/RLS or a Postgres function so updates after the window are rejected server-side.
+- **Row-Level Security & least privilege:** Keep insert/select/update policies tight. Use JWT claims or a short-lived edit token to allow edits only for the allowed timeframe.
+- **Input validation on server:** Validate phone numbers, rent numeric ranges, and sanitize descriptions server-side to prevent injection or malformed data.
+- **Optimistic UI + rollback:** Apply optimistic updates on the client for a snappy UX, but rollback if the server returns an error.
+- **Rate limiting & abuse prevention:** Consider server-side rate limits or a lightweight CAPTCHA for anonymous posting to avoid spam.
+- **Use HTTPS & secrets handling:** Never expose service role keys on the client. Keep only publishable keys in the frontend; move sensitive actions to server-side functions.
+- **Audit logging:** Store who created/edited a listing (IP, timestamp) to help abuse investigations and to enforce edit windows reliably.
 
