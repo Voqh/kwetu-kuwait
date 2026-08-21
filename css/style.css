@@ -185,10 +185,48 @@ a { color: inherit; }
   box-shadow: 0 20px 48px rgba(0,0,0,0.18);
 }
 .review-list { margin: 12px 0 16px; }
-.review-row { display:flex; gap:12px; margin:8px 0; }
-.review-row dt { width: 100px; font-weight:600; }
-.review-row dd { margin:0; }
-.review-actions { display:flex; gap:12px; justify-content:flex-end; margin-top:12px; }
+.review-row { display:flex; gap:12px; margin:8px 0; align-items: baseline; }
+.review-row dt {
+  width: 100px;
+  flex: 0 0 100px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--teal-deep);
+}
+.review-row dd {
+  margin: 0;
+  color: var(--amber-deep);
+  font-weight: 600;
+  font-size: 14px;
+}
+
+/* Description gets its own full-width paragraph below its label, instead
+   of being squeezed into the same narrow-label/inline-value row as the
+   short fields above it. */
+.review-row--stack { flex-direction: column; gap: 4px; }
+.review-row--stack dt { width: auto; flex: none; }
+.review-row--stack dd {
+  color: var(--ink);
+  font-weight: 400;
+  font-size: 14px;
+  line-height: 1.5;
+  text-align: left;
+}
+
+/* Buttons here were inheriting the site's large pill CTA sizing (built for
+   the hero), which dwarfed short labels like "Edit". Right-size them to
+   their own text instead. */
+.review-actions { display:flex; gap:12px; justify-content:flex-end; margin-top:16px; }
+.review-actions .btn {
+  padding: 10px 20px;
+  font-size: 14px;
+  border-radius: 8px;
+  box-shadow: none;
+}
+.review-actions .btn-primary:hover { box-shadow: none; }
 
 /* Area overlay */
 .area-overlay {
@@ -376,6 +414,15 @@ h1 {
   margin: 0 4px 4px;
 }
 
+#boardRows {
+  max-height: 400px;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  /* fades the last row so the cut-off reads as "more below", not a bug */
+  mask-image: linear-gradient(to bottom, #000 calc(100% - 24px), transparent 100%);
+  -webkit-mask-image: linear-gradient(to bottom, #000 calc(100% - 24px), transparent 100%);
+}
+
 .board-row {
   display: grid;
   grid-template-columns: 1.4fr 0.9fr 1fr;
@@ -494,14 +541,21 @@ h1 {
 
 /* Area selector grid. */
 .areas { padding: 72px 0 84px; background: var(--sand-deep); }
-.areas-head { margin-bottom: 28px; }
+.areas-head { margin-bottom: 28px; display: flex; align-items: baseline; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
 .areas-head h2 { font-size: 26px; margin-bottom: 8px; }
 .areas-head p { margin: 0; color: var(--ink-soft); }
+.areas-scroll-hint { font-family: var(--font-mono); font-size: 11.5px; color: var(--ink-soft); white-space: nowrap; }
 
 .area-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
   gap: 14px;
+  max-height: 380px;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  padding-bottom: 4px;
+  mask-image: linear-gradient(to bottom, #000 calc(100% - 28px), transparent 100%);
+  -webkit-mask-image: linear-gradient(to bottom, #000 calc(100% - 28px), transparent 100%);
 }
 
 .area-card {
@@ -654,6 +708,192 @@ h1 {
 
 .modal-note { font-size: 12px; color: var(--ink-soft); text-align: center; margin: 4px 0 0; }
 
+/* ---- Consistency fixes: these classes were used in index.html/app.js
+   but had no rules anywhere in this file (relying entirely on the
+   browser's unstyled default). ---- */
+.field-error {
+  display: block;
+  min-height: 14px;
+  font-size: 12px;
+  color: #C97878;
+  margin-top: 2px;
+}
+.listings-grid {
+  display: flex;
+  flex-direction: column;
+}
+.listings-empty {
+  color: var(--ink-soft);
+  font-size: 14px;
+  text-align: center;
+  padding: 32px 16px;
+  margin: 0;
+}
+.listings-empty-cta {
+  display: block;
+  margin: 12px auto 0;
+  background: none;
+  border: none;
+  color: var(--teal-deep);
+  font-weight: 600;
+  text-decoration: underline;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.label-optional { font-weight: 400; color: var(--ink-soft); font-size: 12px; }
+
+/* ---- Area combobox (Post page) ---- */
+.area-combobox { position: relative; width: 100%; }
+.area-combobox-dropdown {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  max-height: 260px;
+  overflow-y: auto;
+  background: var(--white);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  box-shadow: 0 12px 28px rgba(36, 31, 27, 0.14);
+  z-index: 40;
+  padding: 6px 0;
+}
+.area-combobox-item {
+  display: block;
+  width: 100%;
+  text-align: left;
+  background: none;
+  border: none;
+  font-family: var(--font-body);
+  font-size: 14px;
+  color: var(--ink);
+  padding: 8px 12px;
+  cursor: pointer;
+}
+.area-combobox-item:hover,
+.area-combobox-item:focus {
+  background: var(--sand);
+  color: var(--teal-deep);
+}
+.area-combobox-empty { padding: 10px 12px; font-size: 13px; color: var(--ink-soft); }
+
+.block-other-row { margin-top: -2px; }
+.block-other-row label { font-size: 13px; font-weight: 500; display: flex; flex-direction: column; gap: 6px; }
+
+/* ---- Location pin control, now inside the review-before-publish modal ---- */
+.review-location {
+  margin: 4px 0 16px;
+  padding-top: 14px;
+  border-top: 1px solid var(--line);
+}
+.review-location > .label-optional { display: block; margin-bottom: 8px; }
+
+/* ---- Optional location pin (Post page) ---- */
+.location-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.location-row .btn-block { width: auto; flex: 1 1 auto; }
+.location-clear {
+  background: none;
+  border: none;
+  color: var(--ink-soft);
+  font-size: 12px;
+  text-decoration: underline;
+  cursor: pointer;
+  padding: 0;
+}
+.location-status { font-size: 12px; color: var(--ink-soft); }
+.location-status--ok { color: var(--teal-deep); }
+.location-status--warn { color: #C97878; }
+
+/* ---- Listing card icons: report + map pin, bottom-right ---- */
+.listing-card { position: relative; padding-bottom: 34px; }
+.listing-card-icons {
+  position: absolute;
+  right: 12px;
+  bottom: 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.listing-map-pin {
+  font-size: 16px;
+  text-decoration: none;
+  line-height: 1;
+}
+.listing-report {
+  background: none;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  font-family: var(--font-body);
+  font-size: 11px;
+  color: var(--ink-soft);
+  padding: 4px 9px;
+  cursor: pointer;
+}
+.listing-report:hover { border-color: #C97878; color: #C97878; }
+.listing-report--done { color: var(--teal-deep); border-color: var(--teal); cursor: default; }
+
+/* ---- My Listings page: same page/topbar/back-float pattern as Post & Search ---- */
+.page-mylistings { background: var(--sand); min-height: 100vh; }
+.page-mylistings-body { max-width: 720px; padding: 24px 24px 90px; }
+.mylistings-intro { color: var(--ink-soft); font-size: 14px; margin: 0 0 18px; }
+
+/* Persistent entry point, fixed top-right — mirrors .back-float (fixed
+   top-left) so the two read as one consistent piece of global chrome. */
+.mylistings-float {
+  position: fixed;
+  top: 16px;
+  right: 16px;
+  z-index: 40;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  border: 1.5px solid var(--teal);
+  border-radius: 999px;
+  background: var(--white);
+  color: var(--teal-deep);
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 13px;
+  padding: 9px 16px 9px 12px;
+  cursor: pointer;
+  box-shadow: 0 6px 16px rgba(36, 31, 27, 0.14);
+  transition: transform 0.15s ease, box-shadow 0.15s ease, background 0.15s ease, color 0.15s ease;
+}
+.mylistings-float:hover { background: var(--teal); color: var(--white); transform: translateY(-1px); }
+.mylistings-float-icon { font-size: 14px; line-height: 1; }
+.mylistings-float[hidden] { display: none; }
+
+@media (max-width: 480px) {
+  .mylistings-float { font-size: 0; padding: 10px; gap: 0; }
+  .mylistings-float-icon { font-size: 15px; }
+}
+
+/* Owner actions (Edit/Delete) replace the public report/pin row on My
+   Listings cards — same slot, same pill-button language as .listing-report. */
+.mylisting-actions { position: static; margin-top: 10px; justify-content: flex-end; }
+.mylisting-edit, .mylisting-delete {
+  background: none;
+  border-radius: 999px;
+  font-family: var(--font-body);
+  font-size: 12px;
+  padding: 5px 11px;
+  cursor: pointer;
+}
+.mylisting-edit { border: 1px solid var(--teal); color: var(--teal-deep); }
+.mylisting-edit:hover { background: var(--teal); color: var(--white); }
+.mylisting-delete { border: 1px solid rgba(201, 120, 120, 0.5); color: #C97878; }
+.mylisting-delete:hover { background: #C97878; color: var(--white); }
+
+.mylisting-status {
+  display: inline-block;
+  margin-top: 8px;
+  font-size: 12px;
+  padding: 4px 9px;
+  border-radius: 999px;
+}
+.mylisting-status--reported { background: rgba(201, 120, 120, 0.12); color: #C97878; }
+
 @media (max-width: 860px) {
   /* Stack content into a single column on smaller screens. */
   .hero-inner { grid-template-columns: 1fr; }
@@ -665,6 +905,9 @@ h1 {
   .board-head { padding: 12px 12px 8px; }
   .hero-actions { flex-direction: column; align-items: stretch; }
   .btn { justify-content: center; }
+  #boardRows { max-height: 300px; }
+  .area-grid { grid-template-columns: repeat(2, 1fr); max-height: 320px; gap: 10px; }
+  .area-card { padding: 14px; }
 }
 
 /* Result cards displayed in the search overlay */

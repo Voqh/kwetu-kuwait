@@ -2,39 +2,127 @@
 // Area names are static frontend config (not stored in the DB). Open
 // counts start at 0 and are filled in live from Supabase — see the call
 // to fetchAreaCounts() further down.
+//
+// `tier: "expat"` = dense apartment/"investment" neighbourhoods where the
+// African diaspora and expats in general actually rent — this is the same
+// 13 areas the board always had, and they stay pinned first in every list
+// and dropdown. `tier: "other"` = the rest of Kuwait's residential areas,
+// appended after, so someone posting outside the usual neighbourhoods still
+// has a real option instead of being funnelled into "Other".
+//
+// A note on this list, honestly stated: Kuwait doesn't publish a single
+// legal "expats may live here" register — renting itself isn't restricted
+// by law. What IS real is a de-facto split between "private housing" (villa
+// areas zoned for Kuwaiti citizens, where non-citizens generally can't rent
+// an apartment because none exist to rent) and "investment areas" (the
+// multi-tenant apartment buildings expats actually occupy). The `expat`
+// tier below reflects that investment-area pattern, cross-checked against
+// where Kuwait's rental portals (Boshamlan, Bayut, Dare, Hilite) actually
+// list apartment inventory — not an official source. Treat it as a strong
+// default ordering, not a compliance ruling.
 const AREAS = [
-  { name: "Salmiya",    open: 0, status: "full" },
-  { name: "Hawally",    open: 0, status: "full" },
-  { name: "Farwaniya",  open: 0, status: "full" },
-  { name: "Jabriya",    open: 0, status: "full" },
-  { name: "Fahaheel",   open: 0, status: "full" },
-  { name: "Mangaf",     open: 0, status: "full" },
-  { name: "Khaitan",    open: 0, status: "full" },
-  { name: "Abbasiya",   open: 0, status: "full" },
-  { name: "Jleeb Al-Shuyoukh", open: 0, status: "full" },
-  { name: "Mahboula",   open: 0, status: "full" },
-  { name: "Fintas",     open: 0, status: "full" },
-  { name: "Abu Halifa", open: 0, status: "full" },
-  { name: "Riggae",     open: 0, status: "full" },
+  // --- established expat/investment areas (unchanged, still first) ---
+  { name: "Salmiya",    open: 0, status: "full", tier: "expat" },
+  { name: "Hawally",    open: 0, status: "full", tier: "expat" },
+  { name: "Farwaniya",  open: 0, status: "full", tier: "expat" },
+  { name: "Mahboula",    open: 0, status: "full", tier: "expat" },
+  { name: "Fahaheel",   open: 0, status: "full", tier: "expat" },
+  { name: "Mangaf",     open: 0, status: "full", tier: "expat" },
+  { name: "Khaitan",    open: 0, status: "full", tier: "expat" },
+  { name: "Abbasiya",   open: 0, status: "full", tier: "expat" },
+  { name: "Jleeb Al-Shuyoukh", open: 0, status: "full", tier: "expat" },
+  { name: "Jabriya",   open: 0, status: "full", tier: "expat" },
+  { name: "Fintas",     open: 0, status: "full", tier: "expat" },
+  { name: "Abu Halifa", open: 0, status: "full", tier: "expat" },
+  { name: "Riggae",     open: 0, status: "full", tier: "expat" },
+  // --- additional apartment-heavy areas confirmed active on rental portals ---
+  { name: "Egaila",             open: 0, status: "full", tier: "expat" },
+  { name: "Sabahiya",           open: 0, status: "full", tier: "expat" },
+  { name: "Riqqa",              open: 0, status: "full", tier: "expat" },
+  { name: "Funaitees",          open: 0, status: "full", tier: "expat" },
+  { name: "Ardiya",             open: 0, status: "full", tier: "expat" },
+  { name: "Andalous",           open: 0, status: "full", tier: "expat" },
+  { name: "Ferdous",            open: 0, status: "full", tier: "expat" },
+  { name: "Kuwait City",        open: 0, status: "full", tier: "expat" },
+  { name: "Maidan Hawally",     open: 0, status: "full", tier: "expat" },
+  { name: "Jaber Al-Ali",       open: 0, status: "full", tier: "expat" },
+  { name: "Sabah Al-Ahmad",     open: 0, status: "full", tier: "expat" },
+  { name: "Ahmadi",             open: 0, status: "full", tier: "expat" },
+  { name: "Adan",                open: 0, status: "full", tier: "expat" },
+  { name: "Abraq Khaitan",      open: 0, status: "full", tier: "expat" },
+  { name: "Hadiya",             open: 0, status: "full", tier: "expat" },
+  { name: "Bneid Al-Gar",       open: 0, status: "full", tier: "expat" },
+  // --- broader Kuwait areas (mostly private/villa zoning; some mixed) ---
+  { name: "Shuwaikh",       open: 0, status: "full", tier: "other" },
+  { name: "Sulaibikhat",    open: 0, status: "full", tier: "other" },
+  { name: "Sulaibiya",      open: 0, status: "full", tier: "other" },
+  { name: "Sabah Al-Nasser",open: 0, status: "full", tier: "other" },
+  { name: "Al-Rai",         open: 0, status: "full", tier: "other" },
+  { name: "Jahra",          open: 0, status: "full", tier: "other" },
+  { name: "Surra",          open: 0, status: "full", tier: "other" },
+  { name: "Qortuba",        open: 0, status: "full", tier: "other" },
+  { name: "Bayan",          open: 0, status: "full", tier: "other" },
+  { name: "Salwa",          open: 0, status: "full", tier: "other" },
+  { name: "Rumaithiya",     open: 0, status: "full", tier: "other" },
+  { name: "Shaab",          open: 0, status: "full", tier: "other" },
+  { name: "Faiha",          open: 0, status: "full", tier: "other" },
+  { name: "Daiya",          open: 0, status: "full", tier: "other" },
+  { name: "Adailiya",       open: 0, status: "full", tier: "other" },
+  { name: "Khaldiya",       open: 0, status: "full", tier: "other" },
+  { name: "Kaifan",         open: 0, status: "full", tier: "other" },
+  { name: "Shamiya",        open: 0, status: "full", tier: "other" },
+  { name: "Nuzha",          open: 0, status: "full", tier: "other" },
+  { name: "Yarmouk",        open: 0, status: "full", tier: "other" },
+  { name: "Qadsiya",        open: 0, status: "full", tier: "other" },
+  { name: "Mansouriya",     open: 0, status: "full", tier: "other" },
+  { name: "Rawda",          open: 0, status: "full", tier: "other" },
+  { name: "Other",          open: 0, status: "full", tier: "other" },
 ];
 
-// ---- Blocks per area (Kuwait addresses are organised by block/qita'a) ----
-const AREA_BLOCKS = {
-  Salmiya: ["Block 1", "Block 2", "Block 3", "Block 4", "Block 9", "Block 10", "Block 12"],
-  Hawally: ["Block 1", "Block 2", "Block 3", "Block 4", "Block 5", "Block 6"],
-  Farwaniya: ["Block 1", "Block 2", "Block 3", "Block 4", "Block 5"],
-  Jabriya: ["Block 1", "Block 2", "Block 3", "Block 4", "Block 5", "Block 6", "Block 9", "Block 10", "Block 12"],
-  Fahaheel: ["Block 1", "Block 2", "Block 3", "Block 4", "Block 5"],
-  Mangaf: ["Block 1", "Block 2", "Block 3", "Block 4", "Block 5", "Block 6"],
-  Khaitan: ["Block 1", "Block 2", "Block 3", "Block 4", "Block 5"],
-  Abbasiya: ["Block 1", "Block 2", "Block 3", "Block 4", "Block 5", "Block 6", "Block 7", "Block 8", "Block 9", "Block 10"],
-  "Jleeb Al-Shuyoukh": ["Block 1", "Block 2", "Block 3", "Block 4"],
-  Mahboula: ["Block 1", "Block 2", "Block 3", "Block 4", "Block 5", "Block 6"],
-  Fintas: ["Block 1", "Block 2", "Block 3", "Block 4"],
-  "Abu Halifa": ["Block 1", "Block 2", "Block 3", "Block 4"],
-  Riggae: ["Block 1", "Block 2", "Block 3"],
-  Other: [],
+// ---- Approximate area centres, for the optional location-pin sanity check ----
+// These are rough neighbourhood-centre coordinates, NOT verified block
+// boundaries — Kuwait's real block-level geodata lives with PACI/the
+// Municipality, not in anything web-searchable. Treat this purely as "is the
+// pin roughly in the right neighbourhood", never as proof of a specific
+// block. Areas not listed here simply skip the sanity check rather than
+// guess. See README.md roadmap for sourcing real PACI polygons later.
+const AREA_CENTROIDS = {
+  "Salmiya": [29.334, 48.075], "Hawally": [29.333, 48.028], "Farwaniya": [29.277, 47.939],
+  "Jabriya": [29.317, 48.020], "Fahaheel": [29.081, 48.128], "Mangaf": [29.088, 48.118],
+  "Khaitan": [29.297, 47.933], "Abbasiya": [29.281, 47.955], "Jleeb Al-Shuyoukh": [29.259, 47.935],
+  "Mahboula": [29.135, 48.113], "Fintas": [29.166, 48.113], "Abu Halifa": [29.115, 48.117],
+  "Riggae": [29.339, 47.968], "Egaila": [29.199, 48.079], "Sabahiya": [29.086, 48.109],
+  "Riqqa": [29.239, 48.056], "Ardiya": [29.284, 47.923], "Andalous": [29.288, 47.925],
+  "Ferdous": [29.286, 47.913], "Kuwait City": [29.375, 47.978], "Maidan Hawally": [29.322, 48.023],
+  "Jaber Al-Ali": [29.204, 48.048], "Ahmadi": [29.077, 48.084], "Adan": [29.204, 48.056],
+  "Sulaibikhat": [29.343, 47.925], "Jahra": [29.339, 47.681], "Bneid Al-Gar": [29.365, 47.990],
 };
+
+// ---- Blocks per area ----
+// Sourced from Kuwait's postal-code-by-block system (Ministry of
+// Communications / moc.gov.kw — each residential block gets its own 5-digit
+// code, so "how many blocks" is a real, publicly listed number, not a
+// guess). Confirmed counts below; PACI's Kuwait Finder app is the
+// authoritative source if any of these need correcting.
+//   Salmiya 12 · Hawally 12 · Jabriya 12 · Farwaniya 15 · Fahaheel 12
+// Areas not in this table don't have a confirmed count from that source, so
+// rather than invent one, the block selector falls back to a generic 1–10
+// range plus an "Other / not listed" option that reveals a free-text field
+// — the same escape hatch every area gets, just the default vs. the
+// exception.
+const AREA_BLOCK_COUNTS = {
+  "Salmiya": 12,
+  "Hawally": 12,
+  "Jabriya": 12,
+  "Farwaniya": 15,
+  "Fahaheel": 12,
+};
+const DEFAULT_BLOCK_COUNT = 10;
+const OTHER_BLOCK_VALUE = "__other__";
+
+function blockCountFor(areaName) {
+  return AREA_BLOCK_COUNTS[areaName] || DEFAULT_BLOCK_COUNT;
+}
 
 function formatListingDate(iso) {
   try {
@@ -267,7 +355,7 @@ document.querySelectorAll('.search-type-filters .type-filter').forEach((b) => {
       const filtered = all.filter(item => (item.type||'').toLowerCase() === t.toLowerCase());
       listingsAreaTitle.textContent = `${t} listings`;
       currentSearchHighlightQuery = t;
-      renderListingCards(filtered.map(item => ({ type: item.type, description: item.description, block: item.block, area: item.area, whatsapp: item.whatsapp, createdAt: item.createdAt })));
+      renderListingCards(filtered);
       showListingsPage();
       safePushState({ page: 'listings', area: `type:${t}` }, `#type-${t.toLowerCase()}`);
     })();
@@ -382,14 +470,7 @@ async function handleSearchSubmit(q) {
     // show listings page and render
     listingsAreaTitle.textContent = `${mapped} listings`;
     currentSearchHighlightQuery = mapped;
-    renderListingCards(filtered.map(item => ({
-      type: item.type,
-      description: item.description,
-      block: item.block,
-      area: item.area,
-      whatsapp: item.whatsapp,
-      createdAt: item.createdAt,
-    })));
+    renderListingCards(filtered);
     showListingsPage();
     safePushState({ page: 'listings', area: `type:${mapped}` }, `#type-${mapped.toLowerCase()}`);
     return;
@@ -406,7 +487,7 @@ async function handleSearchSubmit(q) {
   if (results && results.length > 0) {
     listingsAreaTitle.textContent = `Search results for "${q}"`;
     currentSearchHighlightQuery = q;
-    renderListingCards(results.map(item=>({ type: item.type, description: item.description, block: item.block, area: item.area, whatsapp: item.whatsapp, createdAt: item.createdAt })));
+    renderListingCards(results);
     showListingsPage();
     safePushState({ page: 'listings', area: `search:${encodeURIComponent(q)}` }, `#search-${encodeURIComponent(q)}`);
     return;
@@ -485,39 +566,472 @@ const pageHome = document.getElementById("page-home");
 const pagePost = document.getElementById("page-post");
 const pageListings = document.getElementById("page-listings");
 const pageSearch = document.getElementById("page-search");
-const areaSelect = document.getElementById("areaSelect");
-const blockSelect = document.getElementById("blockSelect");
+const pageMyListings = document.getElementById("page-mylistings");
 const listingsAreaTitle = document.getElementById("listingsAreaTitle");
 const listingsGrid = document.getElementById("listingsGrid");
+const myListingsGrid = document.getElementById("myListingsGrid");
+const myListingsFloatBtn = document.getElementById("myListingsFloatBtn");
 
-function populateBlocks(areaName) {
-  const blocks = AREA_BLOCKS[areaName] || [];
-  blockSelect.innerHTML = "";
-  if (!areaName || blocks.length === 0) {
-    blockSelect.disabled = true;
-    const opt = document.createElement("option");
-    opt.value = "";
-    opt.disabled = true;
-    opt.selected = true;
-    opt.textContent = areaName ? "No blocks listed for this area" : "Select an area first";
-    blockSelect.appendChild(opt);
+// ---- Area field: type-to-search combobox ----
+// Why a combobox and not a plain <select>: with ~50 areas now on the list,
+// scrolling a native dropdown is more friction than typing three letters.
+// Why not a free <input> alone: we still need every submission to resolve
+// to one of the known AREAS entries (that's what the board/search/area
+// pages are keyed on), so typing alone must not be enough to submit.
+const areaInput = document.getElementById("areaInput");
+const areaHidden = document.getElementById("areaSelect"); // hidden field, holds the validated value
+const areaDropdown = document.getElementById("areaDropdown");
+const blockSelect = document.getElementById("blockSelect");
+const blockOtherRow = document.getElementById("blockOtherRow");
+const blockOtherInput = document.getElementById("blockOtherInput");
+
+function areaMatches(query) {
+  const q = query.trim().toLowerCase();
+  if (!q) return AREAS;
+  const starts = AREAS.filter(a => a.name.toLowerCase().startsWith(q));
+  const contains = AREAS.filter(a => !a.name.toLowerCase().startsWith(q) && a.name.toLowerCase().includes(q));
+  return [...starts, ...contains].slice(0, 10);
+}
+
+function renderAreaDropdown(query) {
+  const matches = areaMatches(query);
+  if (!matches.length) {
+    areaDropdown.innerHTML = `<div class="area-combobox-empty">No area matches "${query}" — check the spelling</div>`;
+    areaDropdown.hidden = false;
     return;
   }
-  blockSelect.disabled = false;
-  const placeholder = document.createElement("option");
-  placeholder.value = "";
-  placeholder.disabled = true;
-  placeholder.selected = true;
-  placeholder.textContent = "Select a block";
-  blockSelect.appendChild(placeholder);
-  blocks.forEach((b) => {
-    const opt = document.createElement("option");
-    opt.textContent = b;
-    blockSelect.appendChild(opt);
+  // Expat-tier areas still sort first (see AREAS comment above), just
+  // without a visible section header splitting the list.
+  areaDropdown.innerHTML = matches
+    .map(a => `<button type="button" class="area-combobox-item" data-name="${a.name}">${a.name}</button>`)
+    .join("");
+  areaDropdown.hidden = false;
+}
+
+// Populates the block dropdown for the given area: numbered blocks 1..N
+// (see AREA_BLOCK_COUNTS above for what's confirmed vs. a generic default),
+// plus a permanent "Other / not listed" option that reveals a free-text
+// fallback field.
+function populateBlockSelect(areaName) {
+  if (!blockSelect) return;
+  const count = areaName ? blockCountFor(areaName) : DEFAULT_BLOCK_COUNT;
+  const opts = [`<option value="" disabled selected>Select a block</option>`];
+  for (let i = 1; i <= count; i++) opts.push(`<option value="Block ${i}">Block ${i}</option>`);
+  opts.push(`<option value="${OTHER_BLOCK_VALUE}">Other / not listed</option>`);
+  blockSelect.innerHTML = opts.join("");
+  if (blockOtherRow) blockOtherRow.hidden = true;
+  if (blockOtherInput) blockOtherInput.value = "";
+}
+
+if (blockSelect) {
+  blockSelect.addEventListener("change", () => {
+    const isOther = blockSelect.value === OTHER_BLOCK_VALUE;
+    if (blockOtherRow) blockOtherRow.hidden = !isOther;
+    if (isOther && blockOtherInput) blockOtherInput.focus();
   });
 }
 
-areaSelect.addEventListener("change", () => populateBlocks(areaSelect.value));
+// Resolves the block value that actually gets submitted: the selected
+// "Block N", or whatever the user typed under "Other".
+function getBlockValue() {
+  if (!blockSelect) return "";
+  if (blockSelect.value === OTHER_BLOCK_VALUE) return (blockOtherInput?.value || "").trim();
+  return blockSelect.value || "";
+}
+
+function selectArea(name) {
+  areaInput.value = name;
+  areaHidden.value = name;
+  areaDropdown.hidden = true;
+  setFieldError("areaError", "");
+  populateBlockSelect(name);
+}
+
+populateBlockSelect(""); // seed with the generic range before any area is picked
+
+if (areaInput) {
+  areaInput.addEventListener("input", () => {
+    areaHidden.value = ""; // typing invalidates any prior exact match until it's re-confirmed
+    renderAreaDropdown(areaInput.value);
+  });
+  areaInput.addEventListener("focus", () => renderAreaDropdown(areaInput.value));
+  areaInput.addEventListener("blur", () => {
+    // small delay so a click on a dropdown item registers before it's hidden
+    setTimeout(() => {
+      areaDropdown.hidden = true;
+      const exact = AREAS.find(a => a.name.toLowerCase() === areaInput.value.trim().toLowerCase());
+      if (exact) {
+        areaInput.value = exact.name; // normalise casing
+        areaHidden.value = exact.name;
+        populateBlockSelect(exact.name);
+      } else if (areaInput.value.trim()) {
+        areaHidden.value = "";
+        setFieldError("areaError", "Please pick an area from the list");
+      }
+    }, 150);
+  });
+  areaDropdown.addEventListener("mousedown", (e) => {
+    const btn = e.target.closest(".area-combobox-item");
+    if (btn) selectArea(btn.dataset.name);
+  });
+}
+
+// ---- Optional location pin ----
+// Lives on the review step (after "Publish" is tapped, before the listing
+// is actually created) rather than on the form itself — by then the area is
+// already locked in, so the sanity check below has something real to check
+// against, and it doesn't compete for attention with the required fields.
+// See the AREA_CENTROIDS comment above for exactly what it does and doesn't
+// verify. It's a nudge, not a gate: confirming publish is never blocked on
+// it, because a false "that's not in Salmiya" reading (very possible —
+// these are rough neighbourhood centres, not block polygons) would add
+// friction for zero real benefit.
+const pinLocationBtn = document.getElementById("pinLocationBtn");
+const locationStatus = document.getElementById("locationStatus");
+const clearLocationBtn = document.getElementById("clearLocationBtn");
+let pendingLocation = null; // { lat, lng } | null
+
+function haversineKm(lat1, lng1, lat2, lng2) {
+  const R = 6371;
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLng = (lng2 - lng1) * Math.PI / 180;
+  const a = Math.sin(dLat / 2) ** 2 + Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLng / 2) ** 2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
+
+function refreshLocationSanityCheck() {
+  if (!pendingLocation || !locationStatus) return;
+  const area = areaHidden.value;
+  const centre = AREA_CENTROIDS[area];
+  if (!centre) {
+    locationStatus.textContent = "📍 Location pinned";
+    locationStatus.className = "location-status location-status--ok";
+    return;
+  }
+  const km = haversineKm(pendingLocation.lat, pendingLocation.lng, centre[0], centre[1]);
+  if (km > 8) {
+    locationStatus.textContent = `📍 Pinned, but that's ~${km.toFixed(1)}km from ${area} — double-check before publishing`;
+    locationStatus.className = "location-status location-status--warn";
+  } else {
+    locationStatus.textContent = `📍 Pinned near ${area}`;
+    locationStatus.className = "location-status location-status--ok";
+  }
+}
+
+function resetLocationPin() {
+  pendingLocation = null;
+  if (clearLocationBtn) clearLocationBtn.hidden = true;
+  if (locationStatus) { locationStatus.textContent = ""; locationStatus.className = "location-status"; }
+  if (pinLocationBtn) pinLocationBtn.textContent = "📍 Pin my current location";
+}
+
+if (pinLocationBtn) {
+  pinLocationBtn.addEventListener("click", () => {
+    if (!navigator.geolocation) {
+      locationStatus.textContent = "Location isn't available on this device/browser.";
+      locationStatus.className = "location-status location-status--warn";
+      return;
+    }
+    pinLocationBtn.disabled = true;
+    pinLocationBtn.textContent = "Getting location…";
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        pendingLocation = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+        pinLocationBtn.disabled = false;
+        pinLocationBtn.textContent = "📍 Update pinned location";
+        if (clearLocationBtn) clearLocationBtn.hidden = false;
+        refreshLocationSanityCheck();
+      },
+      () => {
+        pinLocationBtn.disabled = false;
+        pinLocationBtn.textContent = "📍 Pin my current location";
+        locationStatus.textContent = "Couldn't get your location — check location permissions and try again.";
+        locationStatus.className = "location-status location-status--warn";
+      },
+      { enableHighAccuracy: true, timeout: 10000 }
+    );
+  });
+}
+if (clearLocationBtn) {
+  clearLocationBtn.addEventListener("click", resetLocationPin);
+}
+
+// ---- Report a listing ----
+// Dedup is client-side only (localStorage) — see report_listing() in
+// schema.sql for why that's an acceptable tradeoff without accounts.
+const REPORTED_KEY = "kwetu_reported_v1";
+function getReportedIds() {
+  try { return new Set(JSON.parse(localStorage.getItem(REPORTED_KEY) || "[]")); }
+  catch (e) { return new Set(); }
+}
+function markReported(id) {
+  try {
+    const ids = getReportedIds();
+    ids.add(id);
+    localStorage.setItem(REPORTED_KEY, JSON.stringify([...ids]));
+  } catch (e) { /* private browsing — dedup just won't persist */ }
+}
+
+async function handleReportClick(btn, id) {
+  if (btn.disabled) return;
+  btn.disabled = true;
+  const original = btn.textContent;
+  btn.textContent = "Reporting…";
+  if (typeof reportListing !== "function" || typeof isSupabaseConfigured !== "function" || !isSupabaseConfigured()) {
+    btn.textContent = "Couldn't connect";
+    setTimeout(() => { btn.textContent = original; btn.disabled = false; }, 2000);
+    return;
+  }
+  const { error } = await reportListing(id);
+  if (error) {
+    btn.textContent = "Couldn't connect";
+    setTimeout(() => { btn.textContent = original; btn.disabled = false; }, 2000);
+    return;
+  }
+  markReported(id);
+  btn.textContent = "Reported ✓";
+  btn.classList.add("listing-report--done");
+}
+
+// Delegated click handler covers every place listing cards get rendered
+// (board, search, overlay) without wiring a listener per card.
+document.addEventListener("click", (e) => {
+  const reportBtn = e.target.closest(".listing-report");
+  if (reportBtn && reportBtn.dataset.id) {
+    handleReportClick(reportBtn, reportBtn.dataset.id);
+  }
+});
+
+// ---- My Listings: view/edit/delete listings this browser has posted ----
+// Same localStorage store the post flow already writes to (kwetu_edit_tokens_v1:
+// { [listingId]: editToken }). There are no accounts, so "your" listings are
+// simply whatever this browser remembers posting — matches the rest of the
+// site's no-login philosophy instead of bolting on a separate concept.
+const EDIT_TOKENS_KEY = "kwetu_edit_tokens_v1";
+
+function getEditTokenStore() {
+  try { return JSON.parse(localStorage.getItem(EDIT_TOKENS_KEY) || "{}"); }
+  catch (e) { return {}; }
+}
+function setEditTokenStore(store) {
+  try { localStorage.setItem(EDIT_TOKENS_KEY, JSON.stringify(store)); }
+  catch (e) { /* private browsing — store just won't persist */ }
+}
+function forgetListingToken(id) {
+  const store = getEditTokenStore();
+  delete store[id];
+  setEditTokenStore(store);
+}
+
+// Tracks which listing is currently being edited via the Post page, so the
+// shared review-and-confirm flow knows whether to create or update. null
+// means "posting a brand-new listing" (the default/original behaviour).
+let editContext = null; // { id, editToken } | null
+
+function resetPostFormForCreate() {
+  editContext = null;
+  const title = document.getElementById("postPageTitle");
+  const reviewTitle = document.getElementById("reviewTitle");
+  const submitBtn = document.getElementById("postSubmitBtn");
+  const confirmBtn = document.getElementById("reviewConfirmBtn");
+  if (title) title.textContent = "Post your room";
+  if (reviewTitle) reviewTitle.textContent = "Review before you publish";
+  if (submitBtn) submitBtn.textContent = "Publish";
+  if (confirmBtn) confirmBtn.textContent = "Confirm and publish";
+  postForm.reset();
+  areaHidden.value = "";
+  populateBlockSelect("");
+  clearFieldErrors();
+  resetLocationPin();
+}
+
+// Fills the (already-existing) Post form/fields with a listing's current
+// values, then flips the page into "edit" mode. Reuses every field, the
+// combobox, the block selector and the review veil as-is — editing is just
+// "post the form, but update instead of create" from here on.
+function prefillPostFormForEdit(listing, editToken) {
+  editContext = { id: listing.id, editToken };
+
+  selectArea(listing.area || "");
+  const blockOptionExists = listing.block && Array.from(blockSelect.options).some(o => o.value === listing.block);
+  if (blockOptionExists) {
+    blockSelect.value = listing.block;
+    if (blockOtherRow) blockOtherRow.hidden = true;
+  } else if (listing.block) {
+    blockSelect.value = OTHER_BLOCK_VALUE;
+    if (blockOtherRow) blockOtherRow.hidden = false;
+    if (blockOtherInput) blockOtherInput.value = listing.block;
+  }
+
+  document.getElementById("typeSelect").value = listing.type || "";
+  document.getElementById("descriptionInput").value = listing.description || "";
+  document.getElementById("rentInput").value = listing.rent_kwd != null ? listing.rent_kwd : "";
+
+  const ccSelect = document.getElementById("ccSelect");
+  const phoneInput = document.getElementById("phoneInput");
+  const knownCC = Array.from(ccSelect.options).map(o => o.value).find(cc => (listing.whatsapp_e164 || "").startsWith(cc));
+  if (knownCC) {
+    ccSelect.value = knownCC;
+    phoneInput.value = (listing.whatsapp_e164 || "").slice(knownCC.length);
+  } else {
+    phoneInput.value = (listing.whatsapp_e164 || "").replace(/^\+/, "");
+  }
+
+  resetLocationPin();
+  if (listing.lat != null && listing.lng != null) {
+    pendingLocation = { lat: listing.lat, lng: listing.lng };
+    if (clearLocationBtn) clearLocationBtn.hidden = false;
+    if (pinLocationBtn) pinLocationBtn.textContent = "📍 Update pinned location";
+    refreshLocationSanityCheck();
+  }
+
+  const title = document.getElementById("postPageTitle");
+  const reviewTitle = document.getElementById("reviewTitle");
+  const submitBtn = document.getElementById("postSubmitBtn");
+  const confirmBtn = document.getElementById("reviewConfirmBtn");
+  if (title) title.textContent = "Edit your listing";
+  if (reviewTitle) reviewTitle.textContent = "Review your changes";
+  if (submitBtn) submitBtn.textContent = "Save changes";
+  if (confirmBtn) confirmBtn.textContent = "Save changes";
+}
+
+async function handleEditClick(id) {
+  const store = getEditTokenStore();
+  const editToken = store[id];
+  if (!editToken || typeof getListingForOwner !== "function" || typeof beginListingEdit !== "function") return;
+
+  const { data: listing, error: fetchError } = await getListingForOwner(id, editToken);
+  if (fetchError || !listing) return;
+
+  const { error: leaseError } = await beginListingEdit(id, editToken);
+  if (leaseError) return;
+
+  prefillPostFormForEdit(listing, editToken);
+  showPost();
+  document.getElementById("reviewVeil").classList.remove("open");
+  safePushState({ page: "post" }, "#post-room");
+}
+
+// ---- Delete a listing (confirm veil, same visual language as review-veil) ----
+const deleteVeil = document.getElementById("deleteVeil");
+const deleteCancelBtn = document.getElementById("deleteCancelBtn");
+const deleteConfirmBtn = document.getElementById("deleteConfirmBtn");
+let pendingDeleteId = null;
+
+function openDeleteVeil(id) {
+  pendingDeleteId = id;
+  if (deleteVeil) deleteVeil.classList.add("open");
+}
+function closeDeleteVeil() {
+  pendingDeleteId = null;
+  if (deleteVeil) deleteVeil.classList.remove("open");
+}
+if (deleteCancelBtn) deleteCancelBtn.addEventListener("click", closeDeleteVeil);
+if (deleteVeil) {
+  deleteVeil.addEventListener("click", (e) => { if (e.target === deleteVeil) closeDeleteVeil(); });
+}
+if (deleteConfirmBtn) {
+  deleteConfirmBtn.addEventListener("click", async () => {
+    if (!pendingDeleteId) return;
+    const id = pendingDeleteId;
+    const store = getEditTokenStore();
+    const editToken = store[id];
+    if (!editToken || typeof deleteListing !== "function") { closeDeleteVeil(); return; }
+
+    deleteConfirmBtn.disabled = true;
+    deleteConfirmBtn.textContent = "Removing…";
+    const { error } = await deleteListing(id, editToken);
+    deleteConfirmBtn.disabled = false;
+    deleteConfirmBtn.textContent = "Remove listing";
+
+    if (error) {
+      const note = document.getElementById("deleteNote");
+      if (note) note.textContent = "Couldn't remove the listing right now — please try again.";
+      return;
+    }
+
+    forgetListingToken(id);
+    closeDeleteVeil();
+    loadMyListings();
+  });
+}
+
+// Card markup for a listing the visitor themselves posted: same base
+// .listing-card look, but with Edit/Delete instead of the public
+// map-pin/report icon row, since owners don't report their own listings.
+function renderMyListingCard(item, editToken) {
+  const card = document.createElement("div");
+  card.className = "listing-card";
+  const waNumber = (item.whatsapp_e164 || "").replace(/[^\d]/g, "");
+  const statusNote = item.status === "reported"
+    ? `<span class="mylisting-status mylisting-status--reported">Hidden from the board &mdash; reported by ${item.report_count || 3}+ people</span>`
+    : "";
+  card.innerHTML = `
+    <span class="listing-date">Posted on ${formatListingDate(item.created_at)}</span>
+    ${item.type ? `<span class="listing-type">${item.type}</span>` : ""}
+    <p class="listing-desc">${item.description || ""}</p>
+    <div class="listing-footer">
+      <span class="listing-area">${item.area || ""}</span>
+      <span class="listing-sep">&middot;</span>
+      <span class="listing-block">${item.block || "Block not listed"}</span>
+      ${item.rent_kwd != null ? `<span class="listing-sep">&middot;</span><span class="listing-rent">${item.rent_kwd} KD/month</span>` : ""}
+      <span class="listing-sep">&middot;</span>
+      <a class="listing-phone" href="https://wa.me/${waNumber}" target="_blank" rel="noopener">${item.whatsapp_e164 || ""}</a>
+    </div>
+    ${statusNote}
+    <div class="listing-card-icons mylisting-actions">
+      <button type="button" class="mylisting-edit" data-id="${item.id}">✎ Edit</button>
+      <button type="button" class="mylisting-delete" data-id="${item.id}">🗑 Delete</button>
+    </div>
+  `;
+  return card;
+}
+
+async function loadMyListings() {
+  if (!myListingsGrid) return;
+  const store = getEditTokenStore();
+  const ids = Object.keys(store);
+
+  if (ids.length === 0) {
+    myListingsGrid.innerHTML = `<p class="listings-empty">You haven't posted anything from this device yet. <button type="button" class="listings-empty-cta" id="myListingsPostCta">Post a room</button></p>`;
+    const cta = document.getElementById("myListingsPostCta");
+    if (cta) cta.addEventListener("click", () => goToPost());
+    return;
+  }
+
+  myListingsGrid.innerHTML = `<p class="listings-empty">Loading your listings…</p>`;
+
+  if (typeof getListingForOwner !== "function" || typeof isSupabaseConfigured !== "function" || !isSupabaseConfigured()) {
+    myListingsGrid.innerHTML = `<p class="listings-empty">Couldn't connect to the listings database. Please try again shortly.</p>`;
+    return;
+  }
+
+  const results = await Promise.all(ids.map(async (id) => {
+    const { data, error } = await getListingForOwner(id, store[id]);
+    return { id, data, error };
+  }));
+
+  myListingsGrid.innerHTML = "";
+  const found = results.filter(r => r.data && !r.error);
+
+  if (found.length === 0) {
+    myListingsGrid.innerHTML = `<p class="listings-empty">None of your posted listings could be loaded &mdash; they may have expired and been cleaned up.</p>`;
+    return;
+  }
+
+  found
+    .sort((a, b) => new Date(b.data.created_at) - new Date(a.data.created_at))
+    .forEach(({ id, data }) => myListingsGrid.appendChild(renderMyListingCard(data, store[id])));
+}
+
+// Delegated handlers, same pattern as the public report button.
+document.addEventListener("click", (e) => {
+  const editBtn = e.target.closest(".mylisting-edit");
+  if (editBtn && editBtn.dataset.id) handleEditClick(editBtn.dataset.id);
+
+  const deleteBtn = e.target.closest(".mylisting-delete");
+  if (deleteBtn && deleteBtn.dataset.id) openDeleteVeil(deleteBtn.dataset.id);
+});
 
 // The actual page-swap. Always runs regardless of whether the History API is
 // usable, so navigation itself never breaks — only the URL bar / browser-back
@@ -528,33 +1042,54 @@ function hideAllPages() {
   pagePost.hidden = true;
   pageListings.hidden = true;
   if (pageSearch) pageSearch.hidden = true;
+  if (pageMyListings) pageMyListings.hidden = true;
+}
+
+// The floating "My Listings" button follows every page except the My
+// Listings page itself (no point linking to the page you're already on) —
+// mirrors how the back-float button already only shows on sub-pages.
+function syncMyListingsFloatVisibility() {
+  if (!myListingsFloatBtn) return;
+  myListingsFloatBtn.hidden = !pageMyListings.hidden;
 }
 
 function showHome() {
   hideAllPages();
   pageHome.hidden = false;
+  syncMyListingsFloatVisibility();
   window.scrollTo({ top: 0, behavior: "instant" });
 }
 
 function showPost() {
   hideAllPages();
   pagePost.hidden = false;
+  syncMyListingsFloatVisibility();
   window.scrollTo({ top: 0, behavior: "instant" });
 }
 
 function showListingsPage() {
   hideAllPages();
   pageListings.hidden = false;
+  syncMyListingsFloatVisibility();
   window.scrollTo({ top: 0, behavior: "instant" });
 }
 
 function showSearchPage() {
   hideAllPages();
   if (pageSearch) pageSearch.hidden = false;
+  syncMyListingsFloatVisibility();
+  window.scrollTo({ top: 0, behavior: "instant" });
+}
+
+function showMyListingsPage() {
+  hideAllPages();
+  if (pageMyListings) pageMyListings.hidden = false;
+  syncMyListingsFloatVisibility();
   window.scrollTo({ top: 0, behavior: "instant" });
 }
 
 function goToPost() {
+  resetPostFormForCreate();
   showPost();
   document.getElementById("reviewVeil").classList.remove("open");
   safePushState({ page: "post" }, "#post-room");
@@ -569,6 +1104,14 @@ function goToHome() {
   showHome();
   safePushState({ page: "home" }, "#");
 }
+
+function goToMyListings() {
+  showMyListingsPage();
+  loadMyListings();
+  safePushState({ page: "mylistings" }, "#my-listings");
+}
+
+if (myListingsFloatBtn) myListingsFloatBtn.addEventListener("click", goToMyListings);
 
 document.querySelectorAll("[data-open-post]").forEach((btn) => {
   btn.addEventListener("click", () => goToPost());
@@ -592,6 +1135,8 @@ document.getElementById("postBackBtn").addEventListener("click", goBack);
 document.getElementById("listingsBackBtn").addEventListener("click", goBack);
 const searchBackBtn = document.getElementById("searchBackBtn");
 if (searchBackBtn) searchBackBtn.addEventListener("click", goBack);
+const mylistingsBackBtn = document.getElementById("mylistingsBackBtn");
+if (mylistingsBackBtn) mylistingsBackBtn.addEventListener("click", goBack);
 
 // Handles the browser/device back button, not just our own arrows.
 window.addEventListener("popstate", (e) => {
@@ -602,13 +1147,16 @@ window.addEventListener("popstate", (e) => {
   } else if (e.state && e.state.page === "listings") {
     showListingsPage();
     if (e.state.area) loadAreaListings(e.state.area);
+  } else if (e.state && e.state.page === "mylistings") {
+    showMyListingsPage();
+    loadMyListings();
   } else {
     showHome();
   }
 });
 
 document.addEventListener("keydown", (e) => {
-  const onSubPage = !pagePost.hidden || !pageListings.hidden;
+  const onSubPage = !pagePost.hidden || !pageListings.hidden || (pageMyListings && !pageMyListings.hidden);
   if (e.key === "Escape" && onSubPage) goBack();
 });
 
@@ -632,20 +1180,19 @@ postForm.addEventListener("submit", (e) => {
   e.preventDefault();
   clearFieldErrors();
 
-  const areaValue = areaSelect.value;
-  const blockValue = blockSelect.value;
+  const areaValue = areaHidden.value;
+  const blockValue = getBlockValue();
   const typeValue = document.getElementById("typeSelect").value;
   const descriptionValue = document.getElementById("descriptionInput").value.trim();
   const phoneValue = document.getElementById("phoneInput").value.trim();
-  const areaHasBlocks = (AREA_BLOCKS[areaValue] || []).length > 0;
 
   let isValid = true;
   if (!areaValue) {
-    setFieldError("areaError", "Please select an Area");
+    setFieldError("areaError", areaInput.value.trim() ? "Please pick an area from the list" : "Please select an Area");
     isValid = false;
   }
-  if (areaHasBlocks && !blockValue) {
-    setFieldError("blockError", "Please select the block");
+  if (!blockValue) {
+    setFieldError("blockError", blockSelect.value === OTHER_BLOCK_VALUE ? "Please type the block or street" : "Please select the block");
     isValid = false;
   }
   if (!typeValue) {
@@ -679,6 +1226,8 @@ postForm.addEventListener("submit", (e) => {
   } else {
     reviewRentRow.hidden = true;
   }
+
+  if (pendingLocation) refreshLocationSanityCheck(); // area may have changed since the pin was captured
 
   postFormNote.textContent = "";
   reviewVeil.classList.add("open");
@@ -720,7 +1269,9 @@ document.getElementById("reviewConfirmBtn").addEventListener("click", async () =
     }, 900);
   };
 
-  if (typeof isSupabaseConfigured !== "function" || !isSupabaseConfigured() || typeof createListing !== "function") {
+  const isEditing = !!editContext;
+  const writeFn = isEditing ? updateListing : createListing;
+  if (typeof isSupabaseConfigured !== "function" || !isSupabaseConfigured() || typeof writeFn !== "function") {
     postFormNote.textContent = "Couldn't connect to the listings database — please try again shortly.";
     postFormNote.style.color = "#C97878";
     return;
@@ -730,39 +1281,52 @@ document.getElementById("reviewConfirmBtn").addEventListener("click", async () =
   const phoneValue = document.getElementById("phoneInput").value.trim();
 
   confirmBtn.disabled = true;
-  confirmBtn.textContent = "Publishing…";
+  confirmBtn.textContent = isEditing ? "Saving…" : "Publishing…";
 
-  const { data, error } = await createListing({
-    area: areaSelect.value,
-    block: blockSelect.value || null,
+  // Re-validate the pin against the CURRENT area at submit time (not just
+  // whenever it was captured) — the user may have changed the area field
+  // after pinning, and a stale pin under the wrong area is worse than none.
+  const areaAtSubmit = areaHidden.value;
+  const centreAtSubmit = AREA_CENTROIDS[areaAtSubmit];
+  const pinStillMakesSense = !pendingLocation || !centreAtSubmit ||
+    haversineKm(pendingLocation.lat, pendingLocation.lng, centreAtSubmit[0], centreAtSubmit[1]) <= 25;
+
+  const payload = {
+    area: areaAtSubmit,
+    block: getBlockValue() || null,
     type: document.getElementById("typeSelect").value,
     description: document.getElementById("descriptionInput").value.trim(),
     rentKwd: document.getElementById("rentInput").value.trim() ? Number(document.getElementById("rentInput").value) : null,
     whatsappE164: `${ccValue}${phoneValue.replace(/\s+/g, "")}`,
-  });
+    lat: pinStillMakesSense && pendingLocation ? pendingLocation.lat : null,
+    lng: pinStillMakesSense && pendingLocation ? pendingLocation.lng : null,
+  };
+
+  const { data, error } = isEditing
+    ? await updateListing(editContext.id, editContext.editToken, payload)
+    : await createListing(payload);
 
   if (error) {
     confirmBtn.disabled = false;
-    confirmBtn.textContent = "Confirm and publish";
-    postFormNote.textContent = "Something went wrong publishing your listing — please try again.";
+    confirmBtn.textContent = isEditing ? "Save changes" : "Confirm and publish";
+    postFormNote.textContent = isEditing
+      ? "Couldn't save your changes — the 10-minute edit window may have expired. Try Edit again from My Listings."
+      : "Something went wrong publishing your listing — please try again.";
     postFormNote.style.color = "#C97878";
     return;
   }
 
   // Remember this listing's id + edit token locally so its owner can edit
   // it later — this is the only place the raw token ever exists outside
-  // the moment it was generated.
-  if (data && data.id && data.editToken) {
-    try {
-      const store = JSON.parse(localStorage.getItem("kwetu_edit_tokens_v1") || "{}");
-      store[data.id] = data.editToken;
-      localStorage.setItem("kwetu_edit_tokens_v1", JSON.stringify(store));
-    } catch (e) {
-      /* localStorage unavailable — listing still published, just not editable later */
-    }
+  // the moment it was generated. (When editing, the token's already stored.)
+  if (!isEditing && data && data.id && data.editToken) {
+    const store = getEditTokenStore();
+    store[data.id] = data.editToken;
+    setEditTokenStore(store);
   }
 
-  confirmBtn.textContent = "Listing posted ✓";
+  confirmBtn.textContent = isEditing ? "Saved ✓" : "Listing posted ✓";
+  resetLocationPin();
   goBackShortly();
 });
 
@@ -780,9 +1344,14 @@ if (location.hash === "#post-room") {
   } else {
     safeReplaceState({ page: "home" }, "#");
   }
+} else if (location.hash === "#my-listings") {
+  safeReplaceState({ page: "mylistings" }, "#my-listings");
+  showMyListingsPage();
+  loadMyListings();
 } else {
   safeReplaceState({ page: "home" }, "#");
 }
+syncMyListingsFloatVisibility();
 
 // ---- Search for a room -> scroll to area grid ----
 // Override the old scroll-to behavior: open overlay for search
@@ -916,7 +1485,7 @@ async function showOverlayListings(areaName) {
         overlayResults.innerHTML = `<p class="listings-empty">Couldn't load listings right now.</p>`;
         return;
       }
-      const mapped = (data || []).map((row) => ({ id: row.id, type: row.type, description: row.description, block: row.block, area: row.area, rentKwd: row.rent_kwd, whatsapp: row.whatsapp_e164, createdAt: row.created_at }));
+      const mapped = (data || []).map((row) => ({ id: row.id, type: row.type, description: row.description, block: row.block, area: row.area, rentKwd: row.rent_kwd, whatsapp: row.whatsapp_e164, createdAt: row.created_at, lat: row.lat, lng: row.lng }));
       renderListingsToContainer(mapped, overlayResults);
     } catch (e) {
       overlayResults.innerHTML = `<p class="listings-empty">Couldn't load listings right now.</p>`;
@@ -976,12 +1545,27 @@ async function gatherAllListings() {
       const { data, error } = await fetchActiveListings();
       if (!error && data) {
         data.forEach(row => {
-          all.push({ id: row.id, area: row.area, type: row.type, description: row.description, block: row.block, rentKwd: row.rent_kwd, whatsapp: row.whatsapp_e164, createdAt: row.created_at });
+          all.push({ id: row.id, area: row.area, type: row.type, description: row.description, block: row.block, rentKwd: row.rent_kwd, whatsapp: row.whatsapp_e164, createdAt: row.created_at, lat: row.lat, lng: row.lng });
         });
       }
     } catch (e) {}
   }
   return all;
+}
+
+// Shared bottom-right icon row for a listing card: a map pin (only when the
+// listing has a pinned lat/lng) and a report flag (always, since reporting
+// needs to work even on listings with no location attached).
+function cardIconsHtml(item) {
+  const reportedAlready = item.id && getReportedIds().has(item.id);
+  const mapIcon = (item.lat != null && item.lng != null)
+    ? `<a class="listing-map-pin" href="https://www.google.com/maps?q=${item.lat},${item.lng}" target="_blank" rel="noopener" aria-label="Open location in Google Maps" title="Open location in Google Maps">📍</a>`
+    : '';
+  const reportBtn = item.id
+    ? `<button type="button" class="listing-report${reportedAlready ? ' listing-report--done' : ''}" data-id="${item.id}" aria-label="Report this listing" title="Report this listing">${reportedAlready ? 'Reported ✓' : '⚑ Report'}</button>`
+    : '';
+  if (!mapIcon && !reportBtn) return '';
+  return `<div class="listing-card-icons">${mapIcon}${reportBtn}</div>`;
 }
 
 // render listings into overlayResults
@@ -1007,6 +1591,7 @@ function renderListingsToContainer(list, container) {
         ${item.rentKwd != null ? `<span class="listing-rent">${item.rentKwd} KD/month</span>` : ''}
         <a class="listing-phone" href="https://wa.me/${(item.whatsapp||'').replace(/\D/g,'')}" target="_blank" rel="noopener">${item.whatsapp||''}</a>
       </div>
+      ${cardIconsHtml(item)}
     `;
     container.appendChild(card);
   });
@@ -1117,6 +1702,7 @@ function renderListingCards(list) {
         <span class="listing-sep">&middot;</span>
         <a class="listing-phone" href="https://wa.me/${waNumber}?text=${waText}" target="_blank" rel="noopener">${item.whatsapp}</a>
       </div>
+      ${cardIconsHtml(item)}
     `;
     listingsGrid.appendChild(card);
   });
@@ -1156,6 +1742,8 @@ async function loadAreaListings(areaName) {
         rentKwd: row.rent_kwd,
         whatsapp: row.whatsapp_e164,
         createdAt: row.created_at,
+        lat: row.lat,
+        lng: row.lng,
       }))
     );
   } catch (e) {

@@ -49,6 +49,8 @@ async function createListing(payload) {
     p_rent_kwd: payload.rentKwd,
     p_whatsapp_e164: payload.whatsappE164,
     p_edit_token: editToken,
+    p_lat: payload.lat ?? null,
+    p_lng: payload.lng ?? null,
   });
 
   if (error) return { data: null, error };
@@ -121,7 +123,57 @@ async function updateListing(id, editToken, payload) {
     p_description: payload.description || "",
     p_rent_kwd: payload.rentKwd,
     p_whatsapp_e164: payload.whatsappE164,
+    p_lat: payload.lat ?? null,
+    p_lng: payload.lng ?? null,
   });
 
+  return { data, error };
+}
+
+// Reports a listing via the report_listing() RPC. anon has no direct write
+// access to listing_reports or to listings.report_count — this is the only
+// path. Returns the listing's new report_count on success so the caller can
+// (optionally) reflect it in the UI; the actual auto-hide threshold logic
+// lives server-side in schema.sql, not here.
+async function reportListing(id, reason) {
+  const client = getClient();
+  if (!client) return { data: null, error: { message: "Supabase not configured" } };
+
+  const { data, error } = await client.rpc("report_listing", {
+    p_listing_id: id,
+    p_reason: reason || null,
+  });
+  return { data, error };
+}
+
+// Fetches one listing on behalf of its owner, proven by their locally-stored
+// edit token — via get_listing_for_owner() this works even if the listing
+// is currently 'reported' or expired, unlike the public RLS-gated select.
+// Powers the "My Listings" page.
+async function getListingForOwner(id, editToken) {
+  const client = getClient();
+  if (!client) return { data: null, error: { message: "Supabase not configured" } };
+
+  const { data, error } = await client.rpc("get_listing_for_owner", {
+    p_listing_id: id,
+    p_edit_token: editToken,
+  });
+  if (error) return { data: null, error };
+
+  const row = Array.isArray(data) ? data[0] : data;
+  return { data: row || null, error: row ? null : { message: "Not found" } };
+}
+
+// Deletes a listing via the delete_public_listing() RPC, given its edit
+// token. No edit lease needed — anon still has no direct DELETE grant on
+// listings (see schema.sql), so this RPC is the only path.
+async function deleteListing(id, editToken) {
+  const client = getClient();
+  if (!client) return { data: null, error: { message: "Supabase not configured" } };
+
+  const { data, error } = await client.rpc("delete_public_listing", {
+    p_listing_id: id,
+    p_edit_token: editToken,
+  });
   return { data, error };
 }
