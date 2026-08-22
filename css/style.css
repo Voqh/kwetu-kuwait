@@ -1,6 +1,7 @@
 :root {
   --teal: #1C7C74;
   --teal-deep: #124F4A;
+  --teal-glow: rgba(28, 124, 116, 0.22);
   --amber: #E8A33D;
   --amber-deep: #C97F1E;
   --ink: #241F1B;
@@ -9,13 +10,45 @@
   --sand-deep: #E4D8C3;
   --white: #FFFDF9;
   --line: rgba(36, 31, 27, 0.12);
+  --danger: #C97878;
 
   --font-display: 'Space Grotesk', sans-serif;
   --font-body: 'Work Sans', sans-serif;
   --font-mono: 'IBM Plex Mono', monospace;
 
-  --radius: 10px;
-  --shadow: 0 12px 32px rgba(18, 79, 74, 0.16);
+  /* ---- Shape scale ----
+     One family of corner radii, used everywhere instead of one-off values.
+     xs/sm = small controls (inputs, filter chips, icon buttons)
+     md    = the default "room" radius: cards, buttons, modals
+     lg    = large containers (the departure board, page-level panels)
+     pill  = fully-rounded (primary/secondary CTAs, badges, chips) */
+  --radius-xs: 6px;
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-pill: 999px;
+  --radius: var(--radius-md); /* legacy alias, kept for any rule still referencing it */
+
+  /* ---- Elevation scale ----
+     Every shadow on the site is one of these three, chosen by how "raised"
+     an element is, not reinvented per component. */
+  --shadow-sm: 0 6px 18px rgba(36, 31, 27, 0.08);
+  --shadow-md: 0 12px 32px rgba(18, 79, 74, 0.14);
+  --shadow-lg: 0 20px 48px rgba(18, 79, 74, 0.18);
+  --shadow: var(--shadow-md); /* legacy alias */
+
+  /* ---- Borders & motion ---- */
+  --border: 1px solid var(--line);
+  --border-teal: 1px solid rgba(28, 124, 116, 0.22);
+  --transition-fast: 0.15s ease;
+  --transition-slow: 0.25s ease;
+
+  /* ---- Spacing scale for section rhythm ---- */
+  --space-xs: 8px;
+  --space-sm: 14px;
+  --space-md: 24px;
+  --space-lg: 40px;
+  --space-xl: 72px;
 }
 
 * { box-sizing: border-box; }
@@ -125,51 +158,6 @@ a { color: inherit; }
   align-items: center;
   justify-content: center;
   background: rgba(0,0,0,0.36);
-.overlay-area-grid {
-  width: min(320px, 38vw);
-  max-height: calc(86vh - 160px);
-  overflow: auto;
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: 10px;
-  padding-right: 6px;
-}
-
-@media (max-width: 640px) {
-  .overlay-area-grid {
-    width: min(280px, 44vw);
-    max-height: calc(40vh);
-  }
-  .overlay-search-input {
-    width: 100%;
-    max-width: none;
-  }
-
-  /* Stack the back arrow above the header/search input on small screens */
-  .area-overlay-head {
-    position: relative;
-    flex-direction: column;
-    align-items: stretch;
-    gap: 8px;
-    /* make room for the absolute back button */
-    padding: 80px 16px 12px 16px;
-  }
-  .area-overlay-card .back-float {
-    position: absolute;
-    top: 12px;
-    left: 12px;
-    width: 36px;
-    height: 36px;
-    margin: 0;
-    align-self: auto;
-    box-shadow: 0 6px 16px rgba(36, 31, 27, 0.12);
-    z-index: 90;
-  }
-  .overlay-search-input { margin-top: 8px; position: relative; z-index: 1; }
-  .overlay-title {
-    justify-content: center;
-  }
-}
   z-index: 60;
 }
 .review-veil.open {
@@ -178,7 +166,7 @@ a { color: inherit; }
 .review-modal {
   background: var(--white);
   color: var(--ink);
-  border-radius: 12px;
+  border-radius: var(--radius-md);
   padding: 20px 22px;
   max-width: 520px;
   width: calc(100% - 48px);
@@ -216,17 +204,10 @@ a { color: inherit; }
   text-align: left;
 }
 
-/* Buttons here were inheriting the site's large pill CTA sizing (built for
-   the hero), which dwarfed short labels like "Edit". Right-size them to
-   their own text instead. */
+/* Review/delete modal actions use the shared .btn-sm modifier (see the
+   button family above) so they stay the same pill shape as every other
+   button on the site, just sized for a modal instead of the hero. */
 .review-actions { display:flex; gap:12px; justify-content:flex-end; margin-top:16px; }
-.review-actions .btn {
-  padding: 10px 20px;
-  font-size: 14px;
-  border-radius: 8px;
-  box-shadow: none;
-}
-.review-actions .btn-primary:hover { box-shadow: none; }
 
 /* Area overlay */
 .area-overlay {
@@ -245,37 +226,76 @@ a { color: inherit; }
   width: min(1100px, 96%);
   max-height: 86vh;
   overflow: hidden;
-  border-radius: 12px;
-  box-shadow: 0 30px 80px rgba(18,79,74,0.18);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-lg);
   display:flex; flex-direction:column;
 }
 .area-overlay-card { position: relative; }
-.area-overlay-head { display:flex; justify-content:center; align-items:center; padding:16px 20px; border-bottom:1px solid var(--line); }
+.area-overlay-head { display:flex; justify-content:center; align-items:center; padding:16px 20px; border-bottom: var(--border); }
 .overlay-title { display:flex; align-items:center; gap:12px; justify-content:center; width:100%; }
 .overlay-area-title { font-family: var(--font-display); font-weight: 600; font-size: 16px; }
 .overlay-title .btn { padding:10px 14px; }
 .brand-like { pointer-events:none; }
-.overlay-search-input { padding:10px 12px; border-radius:8px; border:1px solid var(--line); width:320px; }
-.close-btn { display:inline-flex; align-items:center; justify-content:center; width:38px; height:38px; border-radius:8px; }
+.overlay-search-input { padding:10px 12px; border-radius: var(--radius-sm); border: var(--border); width:320px; }
+.close-btn { display:inline-flex; align-items:center; justify-content:center; width:38px; height:38px; border-radius: var(--radius-sm); }
 .close-btn svg { display:block; }
 .visually-hidden { position:absolute !important; height:1px; width:1px; overflow:hidden; clip:rect(1px,1px,1px,1px); white-space:nowrap; }
 .area-overlay-controls { display:flex; gap:12px; padding:12px 20px; align-items:center; }
-.type-filters { display:flex; gap:8px; }
-.type-filter { padding:8px 12px; border-radius:999px; border:1px solid var(--line); background:var(--white); cursor:pointer; }
-.type-filter.active { background:var(--teal); color:var(--white); border-color:var(--teal-deep); box-shadow:0 6px 18px rgba(28,124,116,0.12); }
+.type-filters { display:flex; gap:8px; flex-wrap: wrap; }
+/* .type-filter is now a .btn-chip in markup-intent; kept as a selector
+   alias so existing JS toggling `.active` still works unchanged. */
+.type-filter { padding: 8px 14px; border-radius: var(--radius-pill); border: var(--border); background: var(--white); color: var(--ink-soft); font-family: var(--font-body); font-size: 12.5px; font-weight: 600; cursor: pointer; transition: background var(--transition-fast), color var(--transition-fast), border-color var(--transition-fast); }
+.type-filter:hover { border-color: var(--teal); color: var(--teal-deep); }
+.type-filter.active { background: var(--teal); color: var(--white); border-color: var(--teal-deep); box-shadow: var(--shadow-sm); }
 .search-field { margin-left:auto; }
-.search-field input { padding:10px 12px; border-radius:8px; border:1px solid var(--line); width:240px; }
+.search-field input { padding:10px 12px; border-radius: var(--radius-sm); border: var(--border); width:240px; }
 .area-overlay-card .back-float { position: absolute; top: 12px; left: 12px; z-index: 80; width:34px; height:34px; }
 .area-overlay-card .back-float svg { width: 14px; height: 14px; display:block; }
 .area-overlay-body { display:flex; gap:16px; padding:16px; overflow:auto; }
 .area-overlay-body { -webkit-overflow-scrolling: touch; }
 .overlay-area-grid { width:320px; max-height:calc(86vh - 160px); overflow:auto; display:grid; grid-template-columns:1fr; gap:10px; padding-right:6px; }
-.overlay-area-grid button.area-card { text-align:left; padding:12px; border-radius:10px; background:var(--white); border:1px solid var(--line); cursor:pointer; box-shadow: 0 6px 18px rgba(36,31,27,0.04); }
-.overlay-area-grid button.area-card:hover { box-shadow: 0 8px 22px rgba(36,31,27,0.06); transform: translateY(-2px); }
+.overlay-area-grid button.area-card { text-align:left; padding:12px; border-radius: var(--radius-sm); background:var(--white); border: var(--border); cursor:pointer; box-shadow: var(--shadow-sm); }
+.overlay-area-grid button.area-card:hover { box-shadow: var(--shadow-md); transform: translateY(-2px); }
+
+@media (max-width: 640px) {
+  .overlay-area-grid {
+    width: min(280px, 44vw);
+    max-height: calc(40vh);
+  }
+  .overlay-search-input {
+    width: 100%;
+    max-width: none;
+  }
+
+  /* Stack the back arrow above the header/search input on small screens */
+  .area-overlay-head {
+    position: relative;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+    /* make room for the absolute back button */
+    padding: 80px 16px 12px 16px;
+  }
+  .area-overlay-card .back-float {
+    position: absolute;
+    top: 12px;
+    left: 12px;
+    width: 36px;
+    height: 36px;
+    margin: 0;
+    align-self: auto;
+    box-shadow: var(--shadow-sm);
+    z-index: 90;
+  }
+  .overlay-search-input { margin-top: 8px; position: relative; z-index: 1; }
+  .overlay-title {
+    justify-content: center;
+  }
+}
 .overlay-results { flex:1; max-height:calc(86vh - 160px); overflow:auto; padding-right:8px; }
 
 /* Listing card styles for overlay/results */
-.listing-card { background:var(--white); border-radius:12px; padding:14px; margin-bottom:12px; box-shadow:0 10px 36px rgba(28,124,116,0.06); border:1px solid rgba(28,124,116,0.08); }
+.listing-card { background:var(--white); border-radius:var(--radius-md); padding:14px; margin-bottom:12px; box-shadow:0 10px 36px rgba(28,124,116,0.06); border:1px solid rgba(28,124,116,0.08); }
 .listing-date { display:block; color:var(--teal); font-family:var(--font-mono); margin-bottom:6px; }
 .listing-type { font-weight:700; color:var(--amber); display:block; margin-bottom:8px; }
 .listing-desc { color:var(--ink); margin-bottom:12px; position:relative; padding-bottom:12px; }
@@ -320,19 +340,25 @@ a { color: inherit; }
   color: var(--ink-soft);
   margin-left: 48px;
 }
-/* Reusable button styles. */
+/* ==== Button family ====
+   Every clickable control on the site is either a .btn (full CTA), a
+   .btn-sm (the same shape, scaled down for tight spaces like modals),
+   or a .btn-chip (pill-shaped filter/tag toggle). All three share the
+   same radius (pill), the same hover lift, and the same focus ring —
+   that's the "inherited trait." Color/emphasis is the only thing that
+   changes between primary and secondary variants. */
 .btn {
   font-family: var(--font-display);
   font-weight: 600;
   font-size: 15px;
   border: none;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   padding: 15px 26px;
   cursor: pointer;
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  transition: transform 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+  transition: transform var(--transition-fast), box-shadow var(--transition-fast), background var(--transition-fast), color var(--transition-fast);
 }
 .btn:focus-visible { outline: 3px solid var(--teal-deep); outline-offset: 3px; }
 .btn-icon { font-size: 16px; line-height: 1; }
@@ -340,7 +366,7 @@ a { color: inherit; }
 .btn-primary {
   background: var(--amber);
   color: var(--ink);
-  box-shadow: var(--shadow);
+  box-shadow: var(--shadow-md);
 }
 .btn-primary:hover { background: var(--amber-deep); transform: translateY(-1px); }
 
@@ -352,6 +378,60 @@ a { color: inherit; }
 .btn-secondary:hover { background: var(--teal); color: var(--white); transform: translateY(-1px); }
 
 .btn-block { width: 100%; justify-content: center; margin-top: 6px; }
+
+/* Compact variant: same family, same radius/hover language, sized for
+   modals and inline actions instead of hero CTAs. */
+.btn-sm {
+  padding: 10px 20px;
+  font-size: 14px;
+  box-shadow: none;
+}
+.btn-sm.btn-primary:hover,
+.btn-sm.btn-secondary:hover { box-shadow: none; }
+
+/* Chip: pill-shaped toggle/tag button, used for type filters and other
+   small actionable labels (report, edit, delete on My Listings). */
+.btn-chip {
+  font-family: var(--font-body);
+  font-size: 12px;
+  font-weight: 600;
+  border-radius: var(--radius-pill);
+  border: var(--border);
+  background: var(--white);
+  color: var(--ink-soft);
+  padding: 6px 13px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition: background var(--transition-fast), color var(--transition-fast), border-color var(--transition-fast), transform var(--transition-fast);
+}
+.btn-chip:focus-visible { outline: 3px solid var(--teal-deep); outline-offset: 2px; }
+.btn-chip--teal { border-color: rgba(28, 124, 116, 0.4); color: var(--teal-deep); }
+.btn-chip--teal:hover { background: var(--teal); color: var(--white); border-color: var(--teal-deep); }
+.btn-chip--danger { border-color: rgba(201, 120, 120, 0.5); color: var(--danger); }
+.btn-chip--danger:hover { background: var(--danger); color: var(--white); border-color: var(--danger); }
+.btn-chip--active { background: var(--teal); color: var(--white); border-color: var(--teal-deep); box-shadow: var(--shadow-sm); }
+
+/* Icon-only square button (back arrow, close), shared corner radius with
+   the rest of the "small controls" family (--radius-sm). */
+.btn-icon-only {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: var(--white);
+  color: var(--ink);
+  cursor: pointer;
+  box-shadow: var(--shadow-sm);
+  transition: transform var(--transition-fast), box-shadow var(--transition-fast);
+}
+.btn-icon-only:hover { transform: translateY(-1px); box-shadow: var(--shadow-md); }
+.btn-icon-only:active { transform: translateY(0) scale(0.96); }
+.btn-icon-only svg { display: block; }
 
 /* Introductory page section. */
 .hero { padding: 64px 0 88px; position: relative; z-index: 2; }
@@ -389,9 +469,9 @@ h1 {
 /* Listing summary board. */
 .board-frame {
   background: var(--ink);
-  border-radius: 16px;
+  border-radius: var(--radius-lg);
   padding: 4px;
-  box-shadow: var(--shadow);
+  box-shadow: var(--shadow-md);
   transform: rotate(0.4deg);
 }
 
@@ -409,7 +489,7 @@ h1 {
 
 .board {
   background: #16110E;
-  border-radius: 12px;
+  border-radius: var(--radius-md);
   padding: 6px 0;
   margin: 0 4px 4px;
 }
@@ -445,7 +525,7 @@ h1 {
 
 .status-open { color: #7FD4A8; }
 .status-few { color: var(--amber); }
-.status-full { color: #C97878; }
+.status-full { color: var(--danger); }
 
 .board-foot {
   padding: 10px 18px 14px;
@@ -470,7 +550,7 @@ h1 {
   margin: 4px auto 0 auto;
   background: var(--white);
   border: 1px solid var(--line);
-  border-radius: 10px;
+  border-radius: var(--radius-sm);
   box-shadow: 0 12px 36px rgba(18,79,74,0.08);
   z-index: 60;
   overflow: hidden;
@@ -607,11 +687,74 @@ h1 {
 /* Search page shares post page layout */
 .page-search { background: var(--sand); min-height: 100vh; }
 .page-search-body { max-width: 720px; padding: 24px 24px 90px; }
-.search-area-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 14px; }
-.search-area-card { background: var(--white); border-radius: var(--radius); padding: 18px; text-decoration: none; color: var(--ink); cursor: pointer; transition: transform 0.15s ease, box-shadow 0.15s ease; border: 1px solid rgba(28,124,116,0.08); box-shadow: 0 8px 24px rgba(28,124,116,0.06); }
-.search-area-card:hover { transform: translateY(-4px); box-shadow: 0 14px 36px rgba(28,124,116,0.12); }
-.search-area-card .area-card-name { font-family: var(--font-display); font-weight: 600; font-size: 16px; display: block; }
-.search-area-card .area-card-count { font-family: var(--font-mono); font-size: 12px; color: var(--ink-soft); }
+
+/* ---- Search page area list ----
+   Deliberately NOT the home page's card grid: a single flowing column of
+   thin rectangular rows, each haloed by a soft blurred teal glow on its
+   edges. The home page keeps its own 10-visible/scroll card grid (see
+   .area-grid above) — that behavior stays exclusive to the home page and
+   is untouched here. */
+.search-area-list {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+.search-area-row {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  width: 100%;
+  background: var(--white);
+  border: var(--border-teal);
+  border-radius: var(--radius-sm);
+  padding: 14px 20px;
+  text-align: left;
+  text-decoration: none;
+  color: var(--ink);
+  cursor: pointer;
+  /* thin rectangle, not a square card */
+  min-height: 44px;
+  box-shadow:
+    0 0 0 1px rgba(28, 124, 116, 0.03),
+    0 10px 30px -6px var(--teal-glow),
+    0 2px 10px -2px var(--teal-glow);
+  transition: transform var(--transition-fast), box-shadow var(--transition-slow), border-color var(--transition-fast);
+}
+/* The blurred glow itself: a soft teal halo that sits behind the row and
+   bleeds past its edges, giving each "flowing section" a lit boundary
+   instead of a hard card outline. */
+.search-area-row::before {
+  content: "";
+  position: absolute;
+  inset: -6px;
+  z-index: -1;
+  border-radius: inherit;
+  background: radial-gradient(120% 160% at 0% 50%, var(--teal-glow), transparent 70%);
+  filter: blur(14px);
+  opacity: 0;
+  transition: opacity var(--transition-slow);
+}
+.search-area-row:hover,
+.search-area-row:focus-visible {
+  transform: translateY(-1px);
+  border-color: rgba(28, 124, 116, 0.4);
+  box-shadow:
+    0 0 0 1px rgba(28, 124, 116, 0.05),
+    0 16px 40px -8px var(--teal-glow),
+    0 4px 14px -2px var(--teal-glow);
+}
+.search-area-row:hover::before,
+.search-area-row:focus-visible::before {
+  opacity: 1;
+}
+.search-area-row .area-card-name { font-family: var(--font-display); font-weight: 600; font-size: 15.5px; }
+.search-area-row .area-card-count { font-family: var(--font-mono); font-size: 12px; color: var(--ink-soft); white-space: nowrap; }
+
+@media (max-width: 480px) {
+  .search-area-row { padding: 12px 16px; }
+}
 
 /* Search input and results */
 .page-search-input { width: 100%; box-sizing: border-box; margin-bottom: 12px; }
@@ -639,7 +782,9 @@ h1 {
 }
 .page-topbar-title { font-family: var(--font-display); font-weight: 600; font-size: 16px; }
 
-/* Floating return control on the posting page. */
+/* Floating return control — shares the .btn-icon-only shape language
+   (--radius-sm, --shadow-sm/md) but stays its own class since it's
+   fixed-positioned rather than inline. */
 .back-float {
   position: fixed;
   top: 16px;
@@ -648,17 +793,17 @@ h1 {
   width: 34px;
   height: 34px;
   border: none;
-  border-radius: 11px;
+  border-radius: var(--radius-sm);
   background: var(--white);
-  box-shadow: 0 6px 16px rgba(36, 31, 27, 0.16);
+  box-shadow: var(--shadow-sm);
   color: var(--ink);
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: transform 0.15s ease, box-shadow 0.15s ease;
+  transition: transform var(--transition-fast), box-shadow var(--transition-fast);
 }
-.back-float:hover { transform: translateY(-1px); box-shadow: 0 8px 20px rgba(36, 31, 27, 0.2); }
+.back-float:hover { transform: translateY(-1px); box-shadow: var(--shadow-md); }
 .back-float:active { transform: translateY(0) scale(0.96); }
 
 .page-post-body {
@@ -672,7 +817,7 @@ h1 {
   font-family: var(--font-body);
   font-size: 14px;
   padding: 11px 12px;
-  border-radius: 8px;
+  border-radius: var(--radius-sm);
   border: 1px solid var(--line);
   background: var(--sand);
   color: var(--ink);
@@ -715,7 +860,7 @@ h1 {
   display: block;
   min-height: 14px;
   font-size: 12px;
-  color: #C97878;
+  color: var(--danger);
   margin-top: 2px;
 }
 .listings-grid {
@@ -754,7 +899,7 @@ h1 {
   overflow-y: auto;
   background: var(--white);
   border: 1px solid var(--line);
-  border-radius: 8px;
+  border-radius: var(--radius-sm);
   box-shadow: 0 12px 28px rgba(36, 31, 27, 0.14);
   z-index: 40;
   padding: 6px 0;
@@ -803,7 +948,7 @@ h1 {
 }
 .location-status { font-size: 12px; color: var(--ink-soft); }
 .location-status--ok { color: var(--teal-deep); }
-.location-status--warn { color: #C97878; }
+.location-status--warn { color: var(--danger); }
 
 /* ---- Listing card icons: report + map pin, bottom-right ---- */
 .listing-card { position: relative; padding-bottom: 34px; }
@@ -822,15 +967,16 @@ h1 {
 }
 .listing-report {
   background: none;
-  border: 1px solid var(--line);
-  border-radius: 999px;
+  border: var(--border);
+  border-radius: var(--radius-pill);
   font-family: var(--font-body);
   font-size: 11px;
   color: var(--ink-soft);
   padding: 4px 9px;
   cursor: pointer;
+  transition: border-color var(--transition-fast), color var(--transition-fast);
 }
-.listing-report:hover { border-color: #C97878; color: #C97878; }
+.listing-report:hover { border-color: var(--danger); color: var(--danger); }
 .listing-report--done { color: var(--teal-deep); border-color: var(--teal); cursor: default; }
 
 /* ---- My Listings page: same page/topbar/back-float pattern as Post & Search ---- */
@@ -849,7 +995,7 @@ h1 {
   align-items: center;
   gap: 6px;
   border: 1.5px solid var(--teal);
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   background: var(--white);
   color: var(--teal-deep);
   font-family: var(--font-display);
@@ -857,8 +1003,8 @@ h1 {
   font-size: 13px;
   padding: 9px 16px 9px 12px;
   cursor: pointer;
-  box-shadow: 0 6px 16px rgba(36, 31, 27, 0.14);
-  transition: transform 0.15s ease, box-shadow 0.15s ease, background 0.15s ease, color 0.15s ease;
+  box-shadow: var(--shadow-sm);
+  transition: transform var(--transition-fast), box-shadow var(--transition-fast), background var(--transition-fast), color var(--transition-fast);
 }
 .mylistings-float:hover { background: var(--teal); color: var(--white); transform: translateY(-1px); }
 .mylistings-float-icon { font-size: 14px; line-height: 1; }
@@ -874,25 +1020,26 @@ h1 {
 .mylisting-actions { position: static; margin-top: 10px; justify-content: flex-end; }
 .mylisting-edit, .mylisting-delete {
   background: none;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   font-family: var(--font-body);
   font-size: 12px;
   padding: 5px 11px;
   cursor: pointer;
+  transition: background var(--transition-fast), color var(--transition-fast);
 }
 .mylisting-edit { border: 1px solid var(--teal); color: var(--teal-deep); }
 .mylisting-edit:hover { background: var(--teal); color: var(--white); }
-.mylisting-delete { border: 1px solid rgba(201, 120, 120, 0.5); color: #C97878; }
-.mylisting-delete:hover { background: #C97878; color: var(--white); }
+.mylisting-delete { border: 1px solid rgba(201, 120, 120, 0.5); color: var(--danger); }
+.mylisting-delete:hover { background: var(--danger); color: var(--white); }
 
 .mylisting-status {
   display: inline-block;
   margin-top: 8px;
   font-size: 12px;
   padding: 4px 9px;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
 }
-.mylisting-status--reported { background: rgba(201, 120, 120, 0.12); color: #C97878; }
+.mylisting-status--reported { background: rgba(201, 120, 120, 0.12); color: var(--danger); }
 
 @media (max-width: 860px) {
   /* Stack content into a single column on smaller screens. */
@@ -913,18 +1060,18 @@ h1 {
 /* Result cards displayed in the search overlay */
 .result-card {
   background: var(--white);
-  border-radius: 12px;
+  border-radius: var(--radius-md);
   padding: 14px;
   margin-bottom: 12px;
   box-shadow: 0 6px 20px rgba(36,31,27,0.06);
   border: 1px solid rgba(36,31,27,0.04);
 }
 .result-posted { color: var(--teal); font-size: 12px; font-family: var(--font-mono); margin-bottom: 6px; }
-.result-type-label { display: inline-block; background: var(--amber); color: var(--ink); padding: 4px 8px; border-radius: 8px; font-size: 12px; font-weight: 700; margin-bottom: 8px; }
+.result-type-label { display: inline-block; background: var(--amber); color: var(--ink); padding: 4px 8px; border-radius: var(--radius-sm); font-size: 12px; font-weight: 700; margin-bottom: 8px; }
 .result-summary { font-size: 16px; line-height: 1.4; margin: 8px 0 10px; color: var(--ink); }
 .result-price { color: var(--teal-deep); font-weight: 700; margin-bottom: 8px; }
 .result-meta { display:flex; gap:10px; flex-wrap:wrap; font-size:13px; color:var(--ink-soft); align-items:center; }
-.result-meta-item { background: rgba(36,31,27,0.03); padding:6px 8px; border-radius:8px; }
+.result-meta-item { background: rgba(36,31,27,0.03); padding:6px 8px; border-radius: var(--radius-sm); }
 .result-whatsapp { color: var(--amber-deep); font-weight:700; text-decoration:none; }
 
 @media (max-width:640px) {

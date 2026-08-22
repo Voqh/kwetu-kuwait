@@ -192,14 +192,16 @@ function renderAreas(data) {
   });
 }
 
-// Render areas into the dedicated search page grid
+// Render areas into the dedicated search page list — a single flowing
+// column of thin rows (not the home page's card grid; that 10-visible/
+// scroll behavior stays exclusive to the home page).
 const searchAreaGrid = document.getElementById('searchAreaGrid');
 function renderSearchAreas(data) {
   if (!searchAreaGrid) return;
   searchAreaGrid.innerHTML = '';
   data.forEach((a) => {
     const btn = document.createElement('button');
-    btn.className = 'search-area-card';
+    btn.className = 'search-area-row';
     btn.type = 'button';
     btn.innerHTML = `<span class="area-card-name">${a.name}</span><span class="area-card-count">${a.open} open · ${statusLabel(a.status).toLowerCase()}</span>`;
     btn.addEventListener('click', () => openAreaListings(a.name));
