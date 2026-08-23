@@ -16,6 +16,14 @@ create table if not exists listings (
   -- the right neighbourhood" signal, not a verified address — see
   -- report_listing() / the area-centroid check in app.js for why block-level
   -- verification isn't attempted.
+  --
+  -- RETIRED as of 23 Aug 2026: the location-pin feature was removed from the
+  -- product (replaced by the Terms/Privacy consent checkbox on the review
+  -- step). These columns are kept, not dropped, on purpose — they're
+  -- nullable, the create/update RPCs' p_lat/p_lng params already default to
+  -- null, and dropping columns is exactly the kind of DB change that's easy
+  -- to get wrong and hard to undo. New listings simply won't populate them.
+  -- Historical listings that already have coordinates keep them, harmlessly.
   lat           double precision check (lat is null or (lat between -90 and 90)),
   lng           double precision check (lng is null or (lng between -180 and 180)),
   report_count  integer not null default 0

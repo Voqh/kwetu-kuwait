@@ -123,6 +123,17 @@ a { color: inherit; }
   height: 68px;
 }
 
+/* Nudged slightly left of dead-center — but only on the home view. Every
+   other page (Post, Search, area listings, My Listings, and the standalone
+   Terms/Privacy pages) shows a back arrow fixed top-left, right next to
+   where a left-shifted logo would sit — so the header centers itself there
+   instead, controlled by the 'view-home' class app.js toggles on <body>.
+   terms.html/privacy.html simply never carry the class, so they're
+   centered by default without needing any JS. */
+body.view-home .topbar-inner .brand {
+  transform: translateX(-28px);
+}
+
 .brand {
   display: flex;
   align-items: center;
@@ -941,31 +952,42 @@ h1 {
 .block-other-row { margin-top: -2px; }
 .block-other-row label { font-size: 13px; font-weight: 500; display: flex; flex-direction: column; gap: 6px; }
 
-/* ---- Location pin control, now inside the review-before-publish modal ---- */
-.review-location {
+/* ---- Consent checkbox, inside the review-before-publish modal ----
+   Occupies the same slot the location-pin control used to. Unlike that
+   control, this one is a real gate on publish/save (see app.js), so it
+   reuses the same .field-error pattern as the form fields above it. */
+.review-consent {
   margin: 4px 0 16px;
   padding-top: 14px;
   border-top: 1px solid var(--line);
 }
-.review-location > .label-optional { display: block; margin-bottom: 8px; }
-
-/* ---- Optional location pin (Post page) ---- */
-.location-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
-.location-row .btn-block { width: auto; flex: 1 1 auto; }
-.location-clear {
-  background: none;
-  border: none;
-  color: var(--ink-soft);
-  font-size: 12px;
-  text-decoration: underline;
+.consent-check {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
   cursor: pointer;
-  padding: 0;
+  font-size: 13.5px;
+  color: var(--ink);
+  line-height: 1.4;
 }
-.location-status { font-size: 12px; color: var(--ink-soft); }
-.location-status--ok { color: var(--teal-deep); }
-.location-status--warn { color: var(--danger); }
+.consent-check input[type="checkbox"] {
+  margin-top: 2px;
+  width: 17px;
+  height: 17px;
+  accent-color: var(--teal);
+  flex-shrink: 0;
+  cursor: pointer;
+}
+.consent-check a {
+  color: var(--teal-deep);
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.consent-check a:hover { color: var(--teal); }
+.review-consent .field-error { display: block; margin-top: 6px; margin-left: 27px; }
 
-/* ---- Listing card icons: report + map pin, bottom-right ---- */
+/* ---- Listing card icons: report flag, bottom-right ---- */
 .listing-card { position: relative; padding-bottom: 34px; }
 .listing-card-icons {
   position: absolute;
@@ -974,11 +996,6 @@ h1 {
   display: flex;
   align-items: center;
   gap: 8px;
-}
-.listing-map-pin {
-  font-size: 16px;
-  text-decoration: none;
-  line-height: 1;
 }
 .listing-report {
   background: none;
@@ -1009,12 +1026,28 @@ h1 {
   right: 16px;
   z-index: 40;
 }
-.mylistings-float-icon { font-size: 14px; line-height: 1; }
+.mylistings-float-icon { display: inline-flex; color: var(--teal-deep); }
+.mylistings-float-icon svg { display: block; }
 .mylistings-float[hidden] { display: none; }
 
 @media (max-width: 480px) {
-  .mylistings-float { font-size: 0; padding: 10px; gap: 0; }
-  .mylistings-float-icon { font-size: 15px; }
+  /* Bare icon only: no pill, no border, no background — just the icon
+     sitting in the same fixed top-right spot. */
+  .mylistings-float,
+  .mylistings-float:hover,
+  .mylistings-float:active {
+    background: none;
+    border: none;
+    box-shadow: none;
+    color: var(--teal-deep);
+    transform: none;
+  }
+  .mylistings-float {
+    padding: 8px;
+    gap: 0;
+  }
+  .mylistings-float-label { display: none; }
+  .mylistings-float-icon svg { width: 22px; height: 22px; }
 }
 
 /* Owner actions (Edit/Delete) replace the public report/pin row on My
@@ -1079,4 +1112,56 @@ h1 {
 @media (max-width:640px) {
   .result-summary { font-size: 15px; }
   .result-type-label { font-size: 11px; padding:3px 6px; }
+}
+
+/* ---- Legal pages (Terms of Service, Privacy Policy) ----
+   Standalone pages (not part of the SPA's hidden-section pattern), but
+   built from the same "rooms in one house" language: same topbar/footer,
+   same card and typography tokens as everywhere else. */
+.page-legal { background: var(--sand); min-height: 100vh; }
+.page-legal-body { max-width: 720px; padding: 32px 24px 90px; }
+
+.legal-draft-notice {
+  background: rgba(232, 163, 61, 0.12);
+  border: 1px solid rgba(232, 163, 61, 0.35);
+  border-radius: var(--radius-sm);
+  padding: 14px 16px;
+  font-size: 13.5px;
+  line-height: 1.5;
+  color: var(--ink);
+  margin-bottom: 24px;
+}
+.legal-draft-notice strong { color: var(--amber-deep); }
+
+.legal-meta {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--ink-soft);
+  margin-bottom: 32px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid var(--line);
+  line-height: 1.7;
+}
+
+.legal-content { background: var(--white); border-radius: var(--radius-md); padding: 28px 28px 8px; box-shadow: var(--shadow-sm); border: var(--border); }
+.legal-content h2 {
+  font-family: var(--font-display);
+  font-size: 18px;
+  font-weight: 600;
+  margin: 28px 0 12px;
+}
+.legal-content h2:first-of-type { margin-top: 0; }
+.legal-content p { margin: 0 0 16px; color: var(--ink); line-height: 1.6; }
+.legal-content ul { margin: 0 0 16px; padding-left: 20px; display: flex; flex-direction: column; gap: 8px; }
+.legal-content li { color: var(--ink); line-height: 1.6; }
+.legal-content strong { font-weight: 600; }
+.legal-content a { color: var(--teal-deep); text-decoration: underline; text-underline-offset: 2px; font-weight: 600; }
+.legal-content a:hover { color: var(--teal); }
+
+.legal-nav { display: flex; gap: 16px; margin-top: 24px; font-size: 13.5px; }
+.legal-nav a { color: var(--teal-deep); font-weight: 600; text-decoration: underline; text-underline-offset: 2px; }
+.legal-nav a:hover { color: var(--teal); }
+
+@media (max-width: 640px) {
+  .legal-content { padding: 22px 18px 4px; }
 }

@@ -13,12 +13,19 @@
 <link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
 <link rel="stylesheet" href="css/style.css">
 </head>
-<body>
+<body class="view-home">
 
 <div class="grain"></div>
 
 <button id="myListingsFloatBtn" class="btn btn-secondary mylistings-float" type="button" aria-label="My Listings">
-  <span class="mylistings-float-icon">☰</span> My Listings
+  <span class="mylistings-float-icon" aria-hidden="true">
+    <svg viewBox="0 0 24 24" width="16" height="16" xmlns="http://www.w3.org/2000/svg">
+      <circle cx="12" cy="5" r="2.1" fill="currentColor"/>
+      <circle cx="12" cy="12" r="2.1" fill="currentColor"/>
+      <circle cx="12" cy="19" r="2.1" fill="currentColor"/>
+    </svg>
+  </span>
+  <span class="mylistings-float-label">My Listings</span>
 </button>
 
 <header class="topbar">
@@ -115,7 +122,7 @@
     <div class="wrap community-inner">
       <p class="community-mark">FLOWTECHOLOGIES</p>
       <h2>Built by the community that uses it.</h2>
-      <p>Kwetu Kuwait is a Flowtechologies community project &mdash; run for Kenyans and the broader African diaspora in Kuwait, by the same. No middlemen, no agent fees, no login walls. Just neighbours helping neighbours find a bed.</p>
+      <p>Kwetu Kuwait is a  community project &mdash; run for Kenyans and the broader African diaspora in Kuwait. No middlemen, no agent fees, no login walls. Just neighbours helping neighbours find a bed.</p>
     </div>
   </section>
 
@@ -123,9 +130,13 @@
 
 <footer class="footer">
   <div class="wrap footer-inner">
-    <span>Kwetu Kuwait &middot; a Flowtechologies project</span>
+    <span>Kwetu Kuwait &middot; by Flowtechologies</span>
     <span class="footer-dot">&middot;</span>
     <span>Listings expire automatically after 30 days</span>
+    <span class="footer-dot">&middot;</span>
+    <a href="terms.html" class="footer-contact">Terms of Service</a>
+    <span class="footer-dot">&middot;</span>
+    <a href="privacy.html" class="footer-contact">Privacy Policy</a>
     <span class="footer-dot">&middot;</span>
     <span>Contact us: <a href="mailto:flowtechnologies@gmail.com" class="footer-contact">flowtechnologies@gmail.com</a></span>
   </div>
@@ -207,13 +218,12 @@
         <div class="review-row" id="reviewRentRow"><dt>Rent</dt><dd id="reviewRent"></dd></div>
         <div class="review-row"><dt>WhatsApp</dt><dd id="reviewPhone"></dd></div>
       </dl>
-      <div class="review-location">
-        <span class="label-optional">Pin your location (optional)</span>
-        <div class="location-row">
-          <button type="button" id="pinLocationBtn" class="btn btn-secondary btn-block">📍 Pin my current location</button>
-          <button type="button" id="clearLocationBtn" class="location-clear" hidden aria-label="Remove pinned location">Remove pin</button>
-        </div>
-        <span class="location-status" id="locationStatus"></span>
+      <div class="review-consent">
+        <label class="consent-check" for="consentCheckbox">
+          <input type="checkbox" id="consentCheckbox">
+          <span>I agree to the <a href="terms.html" target="_blank" rel="noopener">Terms of Service</a> and <a href="privacy.html" target="_blank" rel="noopener">Privacy Policy</a></span>
+        </label>
+        <span class="field-error" id="consentError"></span>
       </div>
       <div class="review-actions">
         <button type="button" class="btn btn-secondary btn-sm" id="reviewEditBtn">Edit</button>

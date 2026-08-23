@@ -79,25 +79,6 @@ const AREAS = [
   { name: "Other",          open: 0, status: "full", tier: "other" },
 ];
 
-// ---- Approximate area centres, for the optional location-pin sanity check ----
-// These are rough neighbourhood-centre coordinates, NOT verified block
-// boundaries — Kuwait's real block-level geodata lives with PACI/the
-// Municipality, not in anything web-searchable. Treat this purely as "is the
-// pin roughly in the right neighbourhood", never as proof of a specific
-// block. Areas not listed here simply skip the sanity check rather than
-// guess. See README.md roadmap for sourcing real PACI polygons later.
-const AREA_CENTROIDS = {
-  "Salmiya": [29.334, 48.075], "Hawally": [29.333, 48.028], "Farwaniya": [29.277, 47.939],
-  "Jabriya": [29.317, 48.020], "Fahaheel": [29.081, 48.128], "Mangaf": [29.088, 48.118],
-  "Khaitan": [29.297, 47.933], "Abbasiya": [29.281, 47.955], "Jleeb Al-Shuyoukh": [29.259, 47.935],
-  "Mahboula": [29.135, 48.113], "Fintas": [29.166, 48.113], "Abu Halifa": [29.115, 48.117],
-  "Riggae": [29.339, 47.968], "Egaila": [29.199, 48.079], "Sabahiya": [29.086, 48.109],
-  "Riqqa": [29.239, 48.056], "Ardiya": [29.284, 47.923], "Andalous": [29.288, 47.925],
-  "Ferdous": [29.286, 47.913], "Kuwait City": [29.375, 47.978], "Maidan Hawally": [29.322, 48.023],
-  "Jaber Al-Ali": [29.204, 48.048], "Ahmadi": [29.077, 48.084], "Adan": [29.204, 48.056],
-  "Sulaibikhat": [29.343, 47.925], "Jahra": [29.339, 47.681], "Bneid Al-Gar": [29.365, 47.990],
-};
-
 // ---- Blocks per area ----
 // Sourced from Kuwait's postal-code-by-block system (Ministry of
 // Communications / moc.gov.kw — each residential block gets its own 5-digit
@@ -678,84 +659,29 @@ if (areaInput) {
   });
 }
 
-// ---- Optional location pin ----
-// Lives on the review step (after "Publish" is tapped, before the listing
-// is actually created) rather than on the form itself — by then the area is
-// already locked in, so the sanity check below has something real to check
-// against, and it doesn't compete for attention with the required fields.
-// See the AREA_CENTROIDS comment above for exactly what it does and doesn't
-// verify. It's a nudge, not a gate: confirming publish is never blocked on
-// it, because a false "that's not in Salmiya" reading (very possible —
-// these are rough neighbourhood centres, not block polygons) would add
-// friction for zero real benefit.
-const pinLocationBtn = document.getElementById("pinLocationBtn");
-const locationStatus = document.getElementById("locationStatus");
-const clearLocationBtn = document.getElementById("clearLocationBtn");
-let pendingLocation = null; // { lat, lng } | null
+// ---- Consent checkbox ----
+// Lives on the review step, in the space the location pin used to occupy —
+// by the time someone reaches review, they've already filled in the whole
+// form, so this is the natural last checkpoint before anything is written
+// to the database. Unlike the old location pin, this one DOES gate publish:
+// no consent, no write. It resets to unchecked whenever a fresh posting or
+// editing session starts (see resetPostForm / handleEditClick), so it always
+// means "I agree, for this listing" rather than carrying over stale state —
+// but it isn't re-cleared on every trip back and forth between the form and
+// the review step within the same session, so fixing a typo before
+// confirming doesn't force re-ticking it.
+const consentCheckbox = document.getElementById("consentCheckbox");
+const consentError = document.getElementById("consentError");
 
-function haversineKm(lat1, lng1, lat2, lng2) {
-  const R = 6371;
-  const dLat = (lat2 - lat1) * Math.PI / 180;
-  const dLng = (lng2 - lng1) * Math.PI / 180;
-  const a = Math.sin(dLat / 2) ** 2 + Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLng / 2) ** 2;
-  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+function resetConsentCheckbox() {
+  if (consentCheckbox) consentCheckbox.checked = false;
+  setFieldError("consentError", "");
 }
 
-function refreshLocationSanityCheck() {
-  if (!pendingLocation || !locationStatus) return;
-  const area = areaHidden.value;
-  const centre = AREA_CENTROIDS[area];
-  if (!centre) {
-    locationStatus.textContent = "📍 Location pinned";
-    locationStatus.className = "location-status location-status--ok";
-    return;
-  }
-  const km = haversineKm(pendingLocation.lat, pendingLocation.lng, centre[0], centre[1]);
-  if (km > 8) {
-    locationStatus.textContent = `📍 Pinned, but that's ~${km.toFixed(1)}km from ${area} — double-check before publishing`;
-    locationStatus.className = "location-status location-status--warn";
-  } else {
-    locationStatus.textContent = `📍 Pinned near ${area}`;
-    locationStatus.className = "location-status location-status--ok";
-  }
-}
-
-function resetLocationPin() {
-  pendingLocation = null;
-  if (clearLocationBtn) clearLocationBtn.hidden = true;
-  if (locationStatus) { locationStatus.textContent = ""; locationStatus.className = "location-status"; }
-  if (pinLocationBtn) pinLocationBtn.textContent = "📍 Pin my current location";
-}
-
-if (pinLocationBtn) {
-  pinLocationBtn.addEventListener("click", () => {
-    if (!navigator.geolocation) {
-      locationStatus.textContent = "Location isn't available on this device/browser.";
-      locationStatus.className = "location-status location-status--warn";
-      return;
-    }
-    pinLocationBtn.disabled = true;
-    pinLocationBtn.textContent = "Getting location…";
-    navigator.geolocation.getCurrentPosition(
-      (pos) => {
-        pendingLocation = { lat: pos.coords.latitude, lng: pos.coords.longitude };
-        pinLocationBtn.disabled = false;
-        pinLocationBtn.textContent = "📍 Update pinned location";
-        if (clearLocationBtn) clearLocationBtn.hidden = false;
-        refreshLocationSanityCheck();
-      },
-      () => {
-        pinLocationBtn.disabled = false;
-        pinLocationBtn.textContent = "📍 Pin my current location";
-        locationStatus.textContent = "Couldn't get your location — check location permissions and try again.";
-        locationStatus.className = "location-status location-status--warn";
-      },
-      { enableHighAccuracy: true, timeout: 10000 }
-    );
+if (consentCheckbox) {
+  consentCheckbox.addEventListener("change", () => {
+    if (consentCheckbox.checked) setFieldError("consentError", "");
   });
-}
-if (clearLocationBtn) {
-  clearLocationBtn.addEventListener("click", resetLocationPin);
 }
 
 // ---- Report a listing ----
@@ -844,7 +770,7 @@ function resetPostFormForCreate() {
   areaHidden.value = "";
   populateBlockSelect("");
   clearFieldErrors();
-  resetLocationPin();
+  resetConsentCheckbox();
 }
 
 // Fills the (already-existing) Post form/fields with a listing's current
@@ -879,13 +805,7 @@ function prefillPostFormForEdit(listing, editToken) {
     phoneInput.value = (listing.whatsapp_e164 || "").replace(/^\+/, "");
   }
 
-  resetLocationPin();
-  if (listing.lat != null && listing.lng != null) {
-    pendingLocation = { lat: listing.lat, lng: listing.lng };
-    if (clearLocationBtn) clearLocationBtn.hidden = false;
-    if (pinLocationBtn) pinLocationBtn.textContent = "📍 Update pinned location";
-    refreshLocationSanityCheck();
-  }
+  resetConsentCheckbox();
 
   const title = document.getElementById("postPageTitle");
   const reviewTitle = document.getElementById("reviewTitle");
@@ -1042,12 +962,18 @@ document.addEventListener("click", (e) => {
 // usable, so navigation itself never breaks — only the URL bar / browser-back
 // integration is affected in a sandboxed environment. There are now three
 // pages (home, post, listings); this hides all of them before showing one.
+//
+// Also clears the "view-home" body class, which controls whether the header
+// is nudged left or centered (see .topbar-inner .brand in style.css) — every
+// non-home page shows a back arrow near the logo, so the header centers
+// itself there to avoid the two overlapping. showHome() re-adds the class.
 function hideAllPages() {
   pageHome.hidden = true;
   pagePost.hidden = true;
   pageListings.hidden = true;
   if (pageSearch) pageSearch.hidden = true;
   if (pageMyListings) pageMyListings.hidden = true;
+  document.body.classList.remove("view-home");
 }
 
 // The floating "My Listings" button follows every page except the My
@@ -1061,6 +987,7 @@ function syncMyListingsFloatVisibility() {
 function showHome() {
   hideAllPages();
   pageHome.hidden = false;
+  document.body.classList.add("view-home");
   syncMyListingsFloatVisibility();
   window.scrollTo({ top: 0, behavior: "instant" });
 }
@@ -1232,8 +1159,6 @@ postForm.addEventListener("submit", (e) => {
     reviewRentRow.hidden = true;
   }
 
-  if (pendingLocation) refreshLocationSanityCheck(); // area may have changed since the pin was captured
-
   postFormNote.textContent = "";
   reviewVeil.classList.add("open");
 });
@@ -1259,6 +1184,13 @@ document.addEventListener("keydown", (e) => {
 // only place that actually writes the listing.
 document.getElementById("reviewConfirmBtn").addEventListener("click", async () => {
   const confirmBtn = document.getElementById("reviewConfirmBtn");
+
+  if (!consentCheckbox || !consentCheckbox.checked) {
+    setFieldError("consentError", "Please agree to the Terms of Service and Privacy Policy to continue");
+    if (consentCheckbox) consentCheckbox.focus();
+    return;
+  }
+  setFieldError("consentError", "");
 
   const goBackShortly = () => {
     setTimeout(() => {
@@ -1288,13 +1220,7 @@ document.getElementById("reviewConfirmBtn").addEventListener("click", async () =
   confirmBtn.disabled = true;
   confirmBtn.textContent = isEditing ? "Saving…" : "Publishing…";
 
-  // Re-validate the pin against the CURRENT area at submit time (not just
-  // whenever it was captured) — the user may have changed the area field
-  // after pinning, and a stale pin under the wrong area is worse than none.
   const areaAtSubmit = areaHidden.value;
-  const centreAtSubmit = AREA_CENTROIDS[areaAtSubmit];
-  const pinStillMakesSense = !pendingLocation || !centreAtSubmit ||
-    haversineKm(pendingLocation.lat, pendingLocation.lng, centreAtSubmit[0], centreAtSubmit[1]) <= 25;
 
   const payload = {
     area: areaAtSubmit,
@@ -1303,8 +1229,6 @@ document.getElementById("reviewConfirmBtn").addEventListener("click", async () =
     description: document.getElementById("descriptionInput").value.trim(),
     rentKwd: document.getElementById("rentInput").value.trim() ? Number(document.getElementById("rentInput").value) : null,
     whatsappE164: `${ccValue}${phoneValue.replace(/\s+/g, "")}`,
-    lat: pinStillMakesSense && pendingLocation ? pendingLocation.lat : null,
-    lng: pinStillMakesSense && pendingLocation ? pendingLocation.lng : null,
   };
 
   const { data, error } = isEditing
@@ -1331,7 +1255,7 @@ document.getElementById("reviewConfirmBtn").addEventListener("click", async () =
   }
 
   confirmBtn.textContent = isEditing ? "Saved ✓" : "Listing posted ✓";
-  resetLocationPin();
+  resetConsentCheckbox();
   goBackShortly();
 });
 
@@ -1490,7 +1414,7 @@ async function showOverlayListings(areaName) {
         overlayResults.innerHTML = `<p class="listings-empty">Couldn't load listings right now.</p>`;
         return;
       }
-      const mapped = (data || []).map((row) => ({ id: row.id, type: row.type, description: row.description, block: row.block, area: row.area, rentKwd: row.rent_kwd, whatsapp: row.whatsapp_e164, createdAt: row.created_at, lat: row.lat, lng: row.lng }));
+      const mapped = (data || []).map((row) => ({ id: row.id, type: row.type, description: row.description, block: row.block, area: row.area, rentKwd: row.rent_kwd, whatsapp: row.whatsapp_e164, createdAt: row.created_at }));
       renderListingsToContainer(mapped, overlayResults);
     } catch (e) {
       overlayResults.innerHTML = `<p class="listings-empty">Couldn't load listings right now.</p>`;
@@ -1550,7 +1474,7 @@ async function gatherAllListings() {
       const { data, error } = await fetchActiveListings();
       if (!error && data) {
         data.forEach(row => {
-          all.push({ id: row.id, area: row.area, type: row.type, description: row.description, block: row.block, rentKwd: row.rent_kwd, whatsapp: row.whatsapp_e164, createdAt: row.created_at, lat: row.lat, lng: row.lng });
+          all.push({ id: row.id, area: row.area, type: row.type, description: row.description, block: row.block, rentKwd: row.rent_kwd, whatsapp: row.whatsapp_e164, createdAt: row.created_at });
         });
       }
     } catch (e) {}
@@ -1558,19 +1482,15 @@ async function gatherAllListings() {
   return all;
 }
 
-// Shared bottom-right icon row for a listing card: a map pin (only when the
-// listing has a pinned lat/lng) and a report flag (always, since reporting
-// needs to work even on listings with no location attached).
+// Bottom-right icon row for a listing card: just the report flag now that
+// the location-pin feature (and its map icon) has been removed.
 function cardIconsHtml(item) {
   const reportedAlready = item.id && getReportedIds().has(item.id);
-  const mapIcon = (item.lat != null && item.lng != null)
-    ? `<a class="listing-map-pin" href="https://www.google.com/maps?q=${item.lat},${item.lng}" target="_blank" rel="noopener" aria-label="Open location in Google Maps" title="Open location in Google Maps">📍</a>`
-    : '';
   const reportBtn = item.id
     ? `<button type="button" class="listing-report${reportedAlready ? ' listing-report--done' : ''}" data-id="${item.id}" aria-label="Report this listing" title="Report this listing">${reportedAlready ? 'Reported ✓' : '⚑ Report'}</button>`
     : '';
-  if (!mapIcon && !reportBtn) return '';
-  return `<div class="listing-card-icons">${mapIcon}${reportBtn}</div>`;
+  if (!reportBtn) return '';
+  return `<div class="listing-card-icons">${reportBtn}</div>`;
 }
 
 // render listings into overlayResults
@@ -1755,8 +1675,6 @@ async function loadAreaListings(areaName) {
         rentKwd: row.rent_kwd,
         whatsapp: row.whatsapp_e164,
         createdAt: row.created_at,
-        lat: row.lat,
-        lng: row.lng,
       }))
     );
   } catch (e) {
