@@ -973,11 +973,14 @@ function renderMyListingCard(item, editToken) {
     ${item.type ? `<span class="listing-type">${item.type}</span>` : ""}
     <p class="listing-desc">${item.description || ""}</p>
     <div class="listing-footer">
-      <span class="listing-area">${item.area || ""}</span>
-      <span class="listing-sep">&middot;</span>
-      <span class="listing-block">${item.block || "Block not listed"}</span>
-      ${item.rent_kwd != null ? `<span class="listing-sep">&middot;</span><span class="listing-rent">${item.rent_kwd} KD/month</span>` : ""}
-      <span class="listing-sep">&middot;</span>
+      <div class="listing-footer-top">
+        <span>
+          <span class="listing-area">${item.area || ""}</span>
+          <span class="listing-sep">&middot;</span>
+          <span class="listing-block">${item.block || "Block not listed"}</span>
+        </span>
+        ${item.rent_kwd != null ? `<span class="listing-rent">${item.rent_kwd} KD/month</span>` : ""}
+      </div>
       <a class="listing-phone" href="https://wa.me/${waNumber}" target="_blank" rel="noopener">${item.whatsapp_e164 || ""}</a>
     </div>
     ${statusNote}
@@ -1587,10 +1590,15 @@ function renderListingsToContainer(list, container) {
       <span class="listing-date">Posted on ${date}</span>
       ${item.type?`<span class="listing-type">${item.type}</span>`:''}
       <p class="listing-desc">${desc}</p>
-      <div class="listing-meta">
-        <span>${item.area||''}</span>
-        <span>${item.block||''}</span>
-        ${item.rentKwd != null ? `<span class="listing-rent">${item.rentKwd} KD/month</span>` : ''}
+      <div class="listing-footer">
+        <div class="listing-footer-top">
+          <span>
+            <span class="listing-area">${item.area||''}</span>
+            <span class="listing-sep">&middot;</span>
+            <span class="listing-block">${item.block||'Block not listed'}</span>
+          </span>
+          ${item.rentKwd != null ? `<span class="listing-rent">${item.rentKwd} KD/month</span>` : ''}
+        </div>
         <a class="listing-phone" href="https://wa.me/${(item.whatsapp||'').replace(/\D/g,'')}" target="_blank" rel="noopener">${item.whatsapp||''}</a>
       </div>
       ${cardIconsHtml(item)}
@@ -1697,11 +1705,14 @@ function renderListingCards(list) {
       ${item.type ? `<span class="listing-type">${item.type}</span>` : ""}
       <p class="listing-desc">${desc}</p>
       <div class="listing-footer">
-        <span class="listing-area">${item.area || listingsAreaTitle.textContent}</span>
-        <span class="listing-sep">&middot;</span>
-        <span class="listing-block">${item.block || "Block not listed"}</span>
-        ${item.rentKwd != null ? `<span class="listing-sep">&middot;</span><span class="listing-rent">${item.rentKwd} KD/month</span>` : ''}
-        <span class="listing-sep">&middot;</span>
+        <div class="listing-footer-top">
+          <span>
+            <span class="listing-area">${item.area || listingsAreaTitle.textContent}</span>
+            <span class="listing-sep">&middot;</span>
+            <span class="listing-block">${item.block || "Block not listed"}</span>
+          </span>
+          ${item.rentKwd != null ? `<span class="listing-rent">${item.rentKwd} KD/month</span>` : ''}
+        </div>
         <a class="listing-phone" href="https://wa.me/${waNumber}?text=${waText}" target="_blank" rel="noopener">${item.whatsapp}</a>
       </div>
       ${cardIconsHtml(item)}
