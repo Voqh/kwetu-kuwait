@@ -297,7 +297,7 @@ a { color: inherit; }
 /* Listing card styles for overlay/results */
 .listing-card { background:var(--white); border-radius:var(--radius-md); padding:14px; margin-bottom:12px; box-shadow:0 10px 36px rgba(28,124,116,0.06); border:1px solid rgba(28,124,116,0.08); }
 .listing-date { display:block; color:var(--teal); font-family:var(--font-mono); margin-bottom:6px; }
-.listing-type { font-weight:700; color:var(--amber); display:block; margin-bottom:8px; }
+.listing-type { font-weight:400; color:var(--amber); display:block; margin-bottom:8px; }
 
 /* A thin hairline (not the old drop-shadow "ridge") separates the free-text
    description from the structured fields below it. */

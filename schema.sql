@@ -105,11 +105,14 @@ begin
   if nullif(btrim(p_area), '') is null or char_length(p_area) > 80 then
     raise exception 'Area is required';
   end if;
+  if nullif(btrim(p_block), '') is null then
+    raise exception 'Block is required';
+  end if;
   if char_length(coalesce(p_block, '')) > 80 then
     raise exception 'Block is too long';
   end if;
-  if nullif(btrim(p_type), '') is null and nullif(btrim(p_description), '') is null then
-    raise exception 'A type or description is required';
+  if nullif(btrim(p_description), '') is null then
+    raise exception 'Description is required';
   end if;
   if char_length(coalesce(p_description, '')) > 1000 then
     raise exception 'Description is too long';
@@ -202,11 +205,14 @@ begin
   if nullif(btrim(p_area), '') is null or char_length(p_area) > 80 then
     raise exception 'Area is required';
   end if;
+  if nullif(btrim(p_block), '') is null then
+    raise exception 'Block is required';
+  end if;
   if char_length(coalesce(p_block, '')) > 80 then
     raise exception 'Block is too long';
   end if;
-  if nullif(btrim(p_type), '') is null and nullif(btrim(p_description), '') is null then
-    raise exception 'A type or description is required';
+  if nullif(btrim(p_description), '') is null then
+    raise exception 'Description is required';
   end if;
   if char_length(coalesce(p_description, '')) > 1000 then
     raise exception 'Description is too long';
