@@ -486,8 +486,15 @@ async function handleSearchSubmit(q) {
 // or the request fails.
 renderAreas(buildAreasData(null));
 renderSearchAreas(buildAreasData(null));
-if (typeof fetchAreaCounts === "function" && typeof isSupabaseConfigured === "function" && isSupabaseConfigured()) {
-  fetchAreaCounts()
+
+// Re-fetches live open counts and re-renders the board + area grids. Called
+// on first load and again right after a listing is published, so the
+// board and search page reflect the new listing without a manual refresh.
+function refreshAreaCounts() {
+  if (typeof fetchAreaCounts !== "function" || typeof isSupabaseConfigured !== "function" || !isSupabaseConfigured()) {
+    return Promise.resolve();
+  }
+  return fetchAreaCounts()
     .then(({ data, error }) => {
       if (!error && data) {
         renderAreas(buildAreasData(data));
@@ -498,6 +505,7 @@ if (typeof fetchAreaCounts === "function" && typeof isSupabaseConfigured === "fu
       /* stay on demo data */
     });
 }
+refreshAreaCounts();
 
 // ---- Live clock on the board ----
 function updateClock() {
@@ -874,6 +882,7 @@ if (deleteConfirmBtn) {
     forgetListingToken(id);
     closeDeleteVeil();
     loadMyListings();
+    refreshAreaCounts();
   });
 }
 
@@ -1262,6 +1271,7 @@ document.getElementById("reviewConfirmBtn").addEventListener("click", async () =
 
   confirmBtn.textContent = isEditing ? "Saved ✓" : "Listing posted ✓";
   resetConsentCheckbox();
+  refreshAreaCounts();
   goBackShortly();
 });
 

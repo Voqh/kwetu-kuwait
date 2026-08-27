@@ -305,35 +305,18 @@ body.view-home .topbar-inner .brand {
 }
 .overlay-results { flex:1; max-height:calc(86vh - 160px); overflow:auto; padding-right:8px; }
 
-/* Listing card styles for overlay/results.
-   The left edge reads as a torn ticket stub — perforation notches punched
-   in --sand (matching the page canvas) plus an amber spine — so each card
-   feels like it was torn off the departure board above, not just a generic
-   panel that happens to share its colors. */
+/* Listing card: a self-contained floating panel — even border and shadow
+   on every side, no accent spine, so it reads as its own section rather
+   than being anchored to the page. */
 .listing-card {
   background:var(--white);
   border-radius:var(--radius-md);
   padding:14px;
-  margin-bottom:12px;
-  box-shadow:0 10px 36px rgba(28,124,116,0.06);
+  margin-bottom:16px;
+  box-shadow:0 10px 36px rgba(28,124,116,0.08);
   border:1px solid rgba(28,124,116,0.08);
-  border-left: 3px solid var(--amber);
   position: relative;
 }
-.listing-card::before,
-.listing-card::after {
-  content: "";
-  position: absolute;
-  left: -6px;
-  width: 12px;
-  height: 12px;
-  background: var(--sand);
-  border-radius: 50%;
-  border: 1px solid rgba(28,124,116,0.08);
-  pointer-events: none;
-}
-.listing-card::before { top: -6px; }
-.listing-card::after  { bottom: -6px; }
 .listing-date { display:block; color:var(--teal); font-family:var(--font-mono); margin-bottom:6px; }
 .listing-type { font-weight:400; color:var(--amber); display:block; margin-bottom:8px; }
 
@@ -875,6 +858,13 @@ h1 {
 .page-post-body {
   max-width: 480px;
   padding: 32px 24px 90px;
+}
+
+/* Gap under the sticky area title so the first listing card floats clear
+   of the header line instead of butting up against it. */
+.page-listings-body {
+  max-width: 720px;
+  padding: 20px 24px 90px;
 }
 
 #postForm { display: flex; flex-direction: column; gap: 14px; min-width: 0; }
