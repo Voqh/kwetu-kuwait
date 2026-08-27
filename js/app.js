@@ -660,10 +660,9 @@ if (areaInput) {
 }
 
 // ---- Consent checkbox ----
-// Lives on the review step, in the space the location pin used to occupy —
-// by the time someone reaches review, they've already filled in the whole
-// form, so this is the natural last checkpoint before anything is written
-// to the database. Unlike the old location pin, this one DOES gate publish:
+// Lives on the review step — by the time someone reaches review, they've
+// already filled in the whole form, so this is the natural last checkpoint
+// before anything is written to the database. This checkbox gates publish:
 // no consent, no write. It resets to unchecked whenever a fresh posting or
 // editing session starts (see resetPostForm / handleEditClick), so it always
 // means "I agree, for this listing" rather than carrying over stale state —
@@ -880,7 +879,7 @@ if (deleteConfirmBtn) {
 
 // Card markup for a listing the visitor themselves posted: same base
 // .listing-card look, but with Edit/Delete instead of the public
-// map-pin/report icon row, since owners don't report their own listings.
+// report icon, since owners don't report their own listings.
 function renderMyListingCard(item, editToken) {
   const card = document.createElement("div");
   card.className = "listing-card";
@@ -1482,8 +1481,7 @@ async function gatherAllListings() {
   return all;
 }
 
-// Bottom-right icon row for a listing card: just the report flag now that
-// the location-pin feature (and its map icon) has been removed.
+// Bottom-right icon row for a listing card: just the report flag.
 function cardIconsHtml(item) {
   const reportedAlready = item.id && getReportedIds().has(item.id);
   const reportBtn = item.id

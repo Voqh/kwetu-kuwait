@@ -993,9 +993,8 @@ h1 {
 .block-other-row label { font-size: 13px; font-weight: 500; display: flex; flex-direction: column; gap: 6px; }
 
 /* ---- Consent checkbox, inside the review-before-publish modal ----
-   Occupies the same slot the location-pin control used to. Unlike that
-   control, this one is a real gate on publish/save (see app.js), so it
-   reuses the same .field-error pattern as the form fields above it. */
+   A real gate on publish/save (see app.js), so it reuses the same
+   .field-error pattern as the form fields above it. */
 .review-consent {
   margin: 4px 0 16px;
   padding-top: 14px;

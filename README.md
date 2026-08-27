@@ -50,7 +50,6 @@ Roadmap
  Phone number validation and WhatsApp deep-link handling
  Finalize status field design (drives both expiry and reporting)
  Finalize country-code handling for WhatsApp links (used to construct wa.me links, not stored)
- Source real PACI/Municipality block-level geodata — the area-centroid distance check in app.js (AREA_CENTROIDS) is a rough neighbourhood-level sanity check only, not verified block boundaries. Replacing it with real polygons is the main remaining gap in the location feature.
  Revisit the "expat"-tier area list periodically — it's inferred from rental-portal inventory (Boshamlan/Bayut/Dare/Hilite), not an official register, since Kuwait doesn't publish one.
  Consider a lightweight CAPTCHA or rate limit on report_listing() — dedup today is client-side (localStorage) only, so a determined abuser could still inflate report_count from multiple devices.
  Apply `migration_2026-08-22_my_listings.sql` to the live Supabase project — `schema.sql` already reflects it for fresh deploys, but the running database needs the one-time migration run manually in the SQL editor.
@@ -80,8 +79,4 @@ Reporting a listing
 - Each call inserts one audit row into `listing_reports` and increments `listings.report_count`. At 3 reports the listing's `status` flips to `'reported'`, which the existing RLS select policy already excludes from public reads — no separate moderation UI needed for the common case.
 - The threshold is deliberately low: a false positive just means a legitimate poster republishes, while slow takedown of an abusive listing is the costlier failure mode on a no-login board.
 - Client-side, `app.js` remembers reported listing IDs in `localStorage` so the same browser can't spam the button — this stops accidental double-taps, not a determined abuser. A real rate limit would need either accounts or a server-side signal (IP, device fingerprint via an edge function) that this stack doesn't currently have.
-
-Location pin
-- Posting a listing now supports an optional device-location pin (`lat`/`lng` columns on `listings`). It is **not** address verification — there's no accessible dataset of real Kuwait block boundaries, so `app.js` only checks the pin against a rough, hand-picked neighbourhood-centre coordinate (`AREA_CENTROIDS`) and shows a soft warning past ~8km. It never blocks publishing.
-- On listing cards, a pin is shown as a 📍 icon that opens `https://www.google.com/maps?q=lat,lng` in a new tab.
 

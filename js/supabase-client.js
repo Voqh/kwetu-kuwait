@@ -35,11 +35,6 @@ function generateEditToken() {
 // Creates a listing via the create_public_listing() RPC — the anon role
 // has no direct INSERT grant on the listings table (see schema.sql), so
 // this is the only way a browser can create a row.
-//
-// Note: p_lat/p_lng are no longer sent from the client — the location-pin
-// feature was removed. The database function still accepts them (defaulting
-// to null) so no schema/migration change was needed to retire this feature;
-// see schema.sql for the historical lat/lng columns.
 async function createListing(payload) {
   const client = getClient();
   if (!client) return { error: { message: "Supabase not configured" } };
@@ -112,7 +107,7 @@ async function beginListingEdit(id, editToken) {
 // Updates an existing listing via the update_public_listing() RPC. Like
 // creating a listing, the anon role has no direct UPDATE grant — this
 // only succeeds if the edit token matches and the edit lease hasn't
-// expired. p_lat/p_lng are no longer sent — see the note on createListing.
+// expired.
 async function updateListing(id, editToken, payload) {
   const client = getClient();
   if (!client) return { data: null, error: { message: "Supabase not configured" } };
