@@ -2,7 +2,7 @@ Kwetu Kuwait
 
 A community housing platform for the African diaspora in Kuwait — helping people find rooms, apartment partitions, and roommates by area, without accounts or friction.
 
-Part of the Pamoja Afrika network.
+Part of the flowtechnologies company.
 
 What this is
 
