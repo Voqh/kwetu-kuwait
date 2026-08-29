@@ -507,6 +507,11 @@ function refreshAreaCounts() {
 }
 refreshAreaCounts();
 
+const copyrightYear = document.getElementById("copyrightYear");
+if (copyrightYear) {
+  copyrightYear.textContent = new Date().getFullYear();
+}
+
 // ---- Live clock on the board ----
 function updateClock() {
   const el = document.getElementById("boardClock");
