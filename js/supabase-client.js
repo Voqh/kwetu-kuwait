@@ -19,7 +19,7 @@ function getClient() {
   return _client;
 }
 
-// Generates a random 64+ char token used as the one-time "proof of
+// Generates a random 64+ char token used as the permanent "proof of
 // ownership" for a listing. It's never stored in the database in plain
 // text — only its hash is (see create_public_listing in schema.sql).
 // The raw token stays in the visitor's own browser (localStorage), which

@@ -163,7 +163,7 @@ begin
 end;
 $$;
 
--- Updates a listing only when the caller presents its valid, unexpired one-time token.
+-- Updates a listing only when the caller presents its valid, unexpired permanent token.
 create or replace function update_public_listing(
   p_listing_id uuid,
   p_edit_token text,
