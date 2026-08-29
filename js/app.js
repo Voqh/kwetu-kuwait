@@ -217,6 +217,7 @@ function fuzzyThresholdFor(token) {
 // highlight helper: wraps matched tokens in <mark>
 function escapeRegex(s){ return s.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'); }
 function highlightText(text, query) {
+  text = escapeHtml(text);
   if (!query || !text) return text;
   const tokens = query.toString().toLowerCase().split(/\s+/).filter(Boolean);
   if (tokens.length === 0) return text;
@@ -229,6 +230,15 @@ function highlightText(text, query) {
     } catch (e) {}
   });
   return out;
+}
+
+function escapeHtml(value) {
+  return String(value ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
 }
 
 function clearSearchUI() {
@@ -697,8 +707,8 @@ if (consentCheckbox) {
 }
 
 // ---- Report a listing ----
-// Dedup is client-side only (localStorage) — see report_listing() in
-// schema.sql for why that's an acceptable tradeoff without accounts.
+// localStorage prevents accidental double-taps. The database additionally
+// limits accepted reports per listing/day; see the report migration.
 const REPORTED_KEY = "kwetu_reported_v1";
 function getReportedIds() {
   try { return new Set(JSON.parse(localStorage.getItem(REPORTED_KEY) || "[]")); }
@@ -762,6 +772,53 @@ function forgetListingToken(id) {
   delete store[id];
   setEditTokenStore(store);
 }
+
+const listingRecoveryVeil = document.getElementById("listingRecoveryVeil");
+const listingRecoveryLink = document.getElementById("listingRecoveryLink");
+const recoveryLinkNote = document.getElementById("recoveryLinkNote");
+
+function recoveryUrlFor(id, editToken) {
+  return `${location.href.split("#")[0]}#edit=${id}.${editToken}`;
+}
+
+function showRecoveryVeil(id, editToken, whatsappE164) {
+  const recoveryUrl = recoveryUrlFor(id, editToken);
+  if (listingRecoveryLink) listingRecoveryLink.value = recoveryUrl;
+  if (recoveryLinkNote) recoveryLinkNote.textContent = "";
+
+  const shareLink = document.getElementById("shareRecoveryLinkBtn");
+  if (shareLink) {
+    const phone = String(whatsappE164 || "").replace(/\D/g, "");
+    const message = encodeURIComponent(`My Kwetu Kuwait listing recovery link: ${recoveryUrl}`);
+    shareLink.href = `https://wa.me/${phone}?text=${message}`;
+  }
+
+  reviewVeil.classList.remove("open");
+  if (listingRecoveryVeil) listingRecoveryVeil.classList.add("open");
+}
+
+function closeRecoveryVeil() {
+  if (listingRecoveryVeil) listingRecoveryVeil.classList.remove("open");
+  resetPostFormForCreate();
+  goToHome();
+}
+
+const copyRecoveryLinkBtn = document.getElementById("copyRecoveryLinkBtn");
+if (copyRecoveryLinkBtn) {
+  copyRecoveryLinkBtn.addEventListener("click", async () => {
+    if (!listingRecoveryLink) return;
+    try {
+      await navigator.clipboard.writeText(listingRecoveryLink.value);
+      if (recoveryLinkNote) recoveryLinkNote.textContent = "Link copied. Keep it somewhere private.";
+    } catch (e) {
+      listingRecoveryLink.focus();
+      listingRecoveryLink.select();
+      if (recoveryLinkNote) recoveryLinkNote.textContent = "Select and copy this link before leaving.";
+    }
+  });
+}
+const closeRecoveryVeilBtn = document.getElementById("closeRecoveryVeilBtn");
+if (closeRecoveryVeilBtn) closeRecoveryVeilBtn.addEventListener("click", closeRecoveryVeil);
 
 // Tracks which listing is currently being edited via the Post page, so the
 // shared review-and-confirm flow knows whether to create or update. null
@@ -903,18 +960,18 @@ function renderMyListingCard(item, editToken) {
     : "";
   card.innerHTML = `
     <span class="listing-date">Posted on ${formatListingDate(item.created_at)}</span>
-    ${item.type ? `<span class="listing-type">${item.type}</span>` : ""}
-    <p class="listing-desc">${item.description || ""}</p>
+    ${item.type ? `<span class="listing-type">${escapeHtml(item.type)}</span>` : ""}
+    <p class="listing-desc">${escapeHtml(item.description)}</p>
     <div class="listing-footer">
       <div class="listing-footer-top">
         <span>
-          <span class="listing-area">${item.area || ""}</span>
+          <span class="listing-area">${escapeHtml(item.area)}</span>
           <span class="listing-sep">&middot;</span>
-          <span class="listing-block">${item.block || "Block not listed"}</span>
+          <span class="listing-block">${escapeHtml(item.block || "Block not listed")}</span>
         </span>
         ${item.rent_kwd != null ? `<span class="listing-rent">${item.rent_kwd} KD/month</span>` : ""}
       </div>
-      <a class="listing-phone" href="https://wa.me/${waNumber}" target="_blank" rel="noopener">${item.whatsapp_e164 || ""}</a>
+      <a class="listing-phone" href="https://wa.me/${waNumber}" target="_blank" rel="noopener">${escapeHtml(item.whatsapp_e164)}</a>
     </div>
     ${statusNote}
     <div class="listing-card-icons mylisting-actions">
@@ -1272,6 +1329,11 @@ document.getElementById("reviewConfirmBtn").addEventListener("click", async () =
     const store = getEditTokenStore();
     store[data.id] = data.editToken;
     setEditTokenStore(store);
+    confirmBtn.textContent = "Listing posted";
+    resetConsentCheckbox();
+    refreshAreaCounts();
+    showRecoveryVeil(data.id, data.editToken, payload.whatsappE164);
+    return;
   }
 
   confirmBtn.textContent = isEditing ? "Saved ✓" : "Listing posted ✓";
@@ -1280,10 +1342,34 @@ document.getElementById("reviewConfirmBtn").addEventListener("click", async () =
   goBackShortly();
 });
 
+async function openRecoveryEdit(id, editToken) {
+  if (typeof getListingForOwner !== "function" || typeof beginListingEdit !== "function") {
+    showHome();
+    return;
+  }
+  const { data: listing, error: fetchError } = await getListingForOwner(id, editToken);
+  if (fetchError || !listing) {
+    showHome();
+    return;
+  }
+  const { error: leaseError } = await beginListingEdit(id, editToken);
+  if (leaseError) {
+    showHome();
+    return;
+  }
+  prefillPostFormForEdit(listing, editToken);
+  showPost();
+  safeReplaceState({ page: "post" }, location.hash);
+}
+
 // Land on the right page directly if someone opens/refreshes with a deep link
 if (location.hash === "#post-room") {
   safeReplaceState({ page: "post" }, "#post-room");
   showPost();
+} else if (location.hash.startsWith("#edit=")) {
+  const [id, editToken] = location.hash.slice(6).split(".");
+  if (id && editToken) openRecoveryEdit(id, editToken);
+  else safeReplaceState({ page: "home" }, "#");
 } else if (location.hash.startsWith("#area-")) {
   const slug = location.hash.replace("#area-", "");
   const matchedArea = AREAS.find((a) => a.name.toLowerCase() === slug);
@@ -1528,18 +1614,18 @@ function renderListingsToContainer(list, container) {
     const desc = highlightText(item.description||'', currentSearchHighlightQuery);
     card.innerHTML = `
       <span class="listing-date">Posted on ${date}</span>
-      ${item.type?`<span class="listing-type">${item.type}</span>`:''}
+      ${item.type?`<span class="listing-type">${escapeHtml(item.type)}</span>`:''}
       <p class="listing-desc">${desc}</p>
       <div class="listing-footer">
         <div class="listing-footer-top">
           <span>
-            <span class="listing-area">${item.area||''}</span>
+            <span class="listing-area">${escapeHtml(item.area)}</span>
             <span class="listing-sep">&middot;</span>
-            <span class="listing-block">${item.block||'Block not listed'}</span>
+            <span class="listing-block">${escapeHtml(item.block||'Block not listed')}</span>
           </span>
           ${item.rentKwd != null ? `<span class="listing-rent">${item.rentKwd} KD/month</span>` : ''}
         </div>
-        <a class="listing-phone" href="https://wa.me/${(item.whatsapp||'').replace(/\D/g,'')}" target="_blank" rel="noopener">${item.whatsapp||''}</a>
+        <a class="listing-phone" href="https://wa.me/${(item.whatsapp||'').replace(/\D/g,'')}" target="_blank" rel="noopener">${escapeHtml(item.whatsapp)}</a>
       </div>
       ${cardIconsHtml(item)}
     `;
@@ -1642,18 +1728,18 @@ function renderListingCards(list) {
     const desc = highlightText(item.description || '', currentSearchHighlightQuery);
     card.innerHTML = `
       <span class="listing-date">Posted on ${formatListingDate(item.createdAt)}</span>
-      ${item.type ? `<span class="listing-type">${item.type}</span>` : ""}
+      ${item.type ? `<span class="listing-type">${escapeHtml(item.type)}</span>` : ""}
       <p class="listing-desc">${desc}</p>
       <div class="listing-footer">
         <div class="listing-footer-top">
           <span>
-            <span class="listing-area">${item.area || listingsAreaTitle.textContent}</span>
+            <span class="listing-area">${escapeHtml(item.area || listingsAreaTitle.textContent)}</span>
             <span class="listing-sep">&middot;</span>
-            <span class="listing-block">${item.block || "Block not listed"}</span>
+            <span class="listing-block">${escapeHtml(item.block || "Block not listed")}</span>
           </span>
           ${item.rentKwd != null ? `<span class="listing-rent">${item.rentKwd} KD/month</span>` : ''}
         </div>
-        <a class="listing-phone" href="https://wa.me/${waNumber}?text=${waText}" target="_blank" rel="noopener">${item.whatsapp}</a>
+        <a class="listing-phone" href="https://wa.me/${waNumber}?text=${waText}" target="_blank" rel="noopener">${escapeHtml(item.whatsapp)}</a>
       </div>
       ${cardIconsHtml(item)}
     `;

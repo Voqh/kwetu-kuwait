@@ -291,6 +291,23 @@
       <p class="modal-note" id="postFormNote"></p>
     </div>
   </div>
+
+  <div class="review-veil" id="listingRecoveryVeil">
+    <div class="review-modal" role="dialog" aria-modal="true" aria-labelledby="listingRecoveryTitle">
+      <p class="eyebrow" id="listingRecoveryTitle">Listing posted</p>
+      <p class="recovery-warning">Save this link now. It is the only way to edit or delete your listing later. With no accounts, it cannot be recovered if lost.</p>
+      <label class="visually-hidden" for="listingRecoveryLink">Your listing recovery link</label>
+      <input class="recovery-link" id="listingRecoveryLink" type="text" readonly>
+      <div class="review-actions">
+        <button type="button" class="btn btn-secondary btn-sm" id="copyRecoveryLinkBtn">Copy link</button>
+        <a class="btn btn-primary btn-sm" id="shareRecoveryLinkBtn" target="_blank" rel="noopener">Send to my WhatsApp</a>
+      </div>
+      <p class="modal-note" id="recoveryLinkNote"></p>
+      <div class="review-actions">
+        <button type="button" class="btn btn-secondary btn-sm" id="closeRecoveryVeilBtn">I've saved it</button>
+      </div>
+    </div>
+  </div>
 </section>
 
 <!-- AREA LISTINGS — full page, opened by tapping an area card -->
