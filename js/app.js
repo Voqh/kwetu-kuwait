@@ -694,15 +694,24 @@ if (areaInput) {
 // confirming doesn't force re-ticking it.
 const consentCheckbox = document.getElementById("consentCheckbox");
 const consentError = document.getElementById("consentError");
+const whatsappConsentCheckbox = document.getElementById("whatsappConsentCheckbox");
 
 function resetConsentCheckbox() {
   if (consentCheckbox) consentCheckbox.checked = false;
   setFieldError("consentError", "");
+  if (whatsappConsentCheckbox) whatsappConsentCheckbox.checked = false;
+  setFieldError("whatsappConsentError", "");
 }
 
 if (consentCheckbox) {
   consentCheckbox.addEventListener("change", () => {
     if (consentCheckbox.checked) setFieldError("consentError", "");
+  });
+}
+
+if (whatsappConsentCheckbox) {
+  whatsappConsentCheckbox.addEventListener("change", () => {
+    if (whatsappConsentCheckbox.checked) setFieldError("whatsappConsentError", "");
   });
 }
 
@@ -971,7 +980,9 @@ function renderMyListingCard(item, editToken) {
         </span>
         ${item.rent_kwd != null ? `<span class="listing-rent">${item.rent_kwd} KD/month</span>` : ""}
       </div>
-      <a class="listing-phone" href="https://wa.me/${waNumber}" target="_blank" rel="noopener">${escapeHtml(item.whatsapp_e164)}</a>
+      ${item.whatsapp_e164
+        ? `<a class="listing-phone" href="https://wa.me/${waNumber}" target="_blank" rel="noopener">${escapeHtml(item.whatsapp_e164)}</a>`
+        : `<span class="listing-phone listing-phone--removed">Number removed (listing expired)</span>`}
     </div>
     ${statusNote}
     <div class="listing-card-icons mylisting-actions">
@@ -1254,6 +1265,13 @@ document.addEventListener("keydown", (e) => {
 // only place that actually writes the listing.
 document.getElementById("reviewConfirmBtn").addEventListener("click", async () => {
   const confirmBtn = document.getElementById("reviewConfirmBtn");
+
+  if (!whatsappConsentCheckbox || !whatsappConsentCheckbox.checked) {
+    setFieldError("whatsappConsentError", "Please consent to your WhatsApp number being displayed publicly to continue");
+    if (whatsappConsentCheckbox) whatsappConsentCheckbox.focus();
+    return;
+  }
+  setFieldError("whatsappConsentError", "");
 
   if (!consentCheckbox || !consentCheckbox.checked) {
     setFieldError("consentError", "Please agree to the Terms of Service and Privacy Policy to continue");

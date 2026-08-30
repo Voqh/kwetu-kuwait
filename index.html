@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Kwetu Kuwait — Find your room, find your people</title>
-<meta name="description" content="Kwetu Kuwait helps the African community in Kuwait find rooms, partitions, and roommates by area — no login, no fuss. Part of the Flowtwchnologies network.">
+<meta name="description" content="Kwetu Kuwait helps the African community in Kuwait find rooms, partitions, and roommates by area — no login, no fuss.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Work+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
 <link rel="icon" type="image/svg+xml" href="assets/logo.svg">
@@ -41,7 +41,6 @@
       </span>
       <span class="brand-text">
         <span class="brand-name">Kwetu Kuwait</span>
-        <span class="brand-sub">by Flowtwchnologies</span>
       </span>
     </a>
   </div>
@@ -124,7 +123,7 @@
       <path d="M18,25.2 L18,50 L34,50 L34,38 L48,38 L48,26.7" fill="none" stroke="var(--white)" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/>
     </svg>
     <div class="wrap community-inner">
-      <p class="community-mark">FLOWTWCHNOLOGIES</p>
+      <p class="community-mark">KWETU KUWAIT</p>
       <h2>Built by the community that uses it.</h2>
       <p>Kwetu Kuwait is a  community project &mdash; for the African diaspora in Kuwait. No middlemen, no agent fees, no login walls. Just neighbours helping neighbours find a bed.</p>
     </div>
@@ -134,8 +133,7 @@
 
 <footer class="footer">
   <div class="wrap footer-inner">
-    <span>Kwetu Kuwait &middot; by Flowtwchnologies</span>
-    <span>&copy; <span id="copyrightYear"></span> Kwetu Kuwait &mdash; a Flowtwchnologies project. All rights reserved.</span>
+    <span>&copy; <span id="copyrightYear"></span> Kwetu Kuwait. All rights reserved.</span>
     <span class="footer-dot">&middot;</span>
     <span>Listings expire automatically after 30 days</span>
     <span class="footer-dot">&middot;</span>
@@ -277,6 +275,13 @@
         <div class="review-row" id="reviewRentRow"><dt>Rent</dt><dd id="reviewRent"></dd></div>
         <div class="review-row"><dt>WhatsApp</dt><dd id="reviewPhone"></dd></div>
       </dl>
+      <div class="review-consent">
+        <label class="consent-check" for="whatsappConsentCheckbox">
+          <input type="checkbox" id="whatsappConsentCheckbox">
+          <span>I consent to my WhatsApp number being displayed publicly on this listing</span>
+        </label>
+        <span class="field-error" id="whatsappConsentError"></span>
+      </div>
       <div class="review-consent">
         <label class="consent-check" for="consentCheckbox">
           <input type="checkbox" id="consentCheckbox">

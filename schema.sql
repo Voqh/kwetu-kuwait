@@ -8,7 +8,7 @@ create table if not exists listings (
   type          text check (type in ('Apartment', 'Room', 'Partition', 'Bedspace')),
   description   text,
   rent_kwd      numeric check (rent_kwd is null or rent_kwd >= 0),
-  whatsapp_e164 text not null,
+  whatsapp_e164 text,
   status        text not null default 'active' check (status in ('active', 'reported')),
   created_at    timestamptz not null default now(),
   expires_at    timestamptz not null default (now() + interval '30 days'),
@@ -369,13 +369,27 @@ create policy "public can read live listings"
   to anon
   using (status = 'active' and expires_at > now());
 
--- Removes listings that expired more than seven days ago.
-create or replace function purge_expired_listings()
+-- Hard-deletes the WhatsApp number as soon as a listing expires (30 days),
+-- ahead of the full row purge below, which waits an extra 7 days.
+create or replace function scrub_expired_listing_contact()
 returns void
 language sql
 as $$
-  with expired_edit_sessions as (
-    delete from listing_edit_sessions where edit_lease_expires_at < now()
-  )
+  update listings
+  set whatsapp_e164 = null
+  where expires_at <= now()
+    and whatsapp_e164 is not null;
+$$;
+
+-- Removes listings that expired more than seven days ago.
+create or replace function purge_expired_listings()
+returns void
+language plpgsql
+as $$
+begin
+  perform scrub_expired_listing_contact();
+
+  delete from listing_edit_sessions where edit_lease_expires_at < now();
   delete from listings where expires_at < now() - interval '7 days';
+end;
 $$;

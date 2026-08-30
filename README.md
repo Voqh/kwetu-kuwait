@@ -12,7 +12,7 @@ Core design principles
 - No login required — anyone can post or browse instantly.
 - Area-first navigation — Kuwait's areas are the primary way people think about housing, so the site is structured around them first, not a generic search bar.
 - WhatsApp as the primary contact method — the platform never handles messaging itself; it hands off to WhatsApp via wa.me deep links.
-- Self-healing content — listings expire automatically after 30 days via query-time filtering, and are purged 7 days after that. No admin panel needed to keep the board fresh.
+- Self-healing content — listings expire automatically after 30 days via query-time filtering; the WhatsApp number is hard-deleted at that same 30-day mark, and the rest of the listing row is purged 7 days after that. No admin panel needed to keep the board fresh.
 Tech stack
 | Layer | Tech |
 | --- | --- |
