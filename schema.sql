@@ -342,12 +342,12 @@ begin
 end;
 $$;
 
-revoke all on function create_public_listing(text, text, text, text, numeric, text, text) from public;
-revoke all on function begin_public_listing_edit(uuid, text) from public;
-revoke all on function update_public_listing(uuid, text, text, text, text, text, numeric, text) from public;
-revoke all on function report_listing(uuid, text) from public;
-revoke all on function get_listing_for_owner(uuid, text) from public;
-revoke all on function delete_public_listing(uuid, text) from public;
+revoke all on function create_public_listing(text, text, text, text, numeric, text, text) from public, authenticated;
+revoke all on function begin_public_listing_edit(uuid, text) from public, authenticated;
+revoke all on function update_public_listing(uuid, text, text, text, text, text, numeric, text) from public, authenticated;
+revoke all on function report_listing(uuid, text) from public, authenticated;
+revoke all on function get_listing_for_owner(uuid, text) from public, authenticated;
+revoke all on function delete_public_listing(uuid, text) from public, authenticated;
 grant execute on function create_public_listing(text, text, text, text, numeric, text, text) to anon;
 grant execute on function begin_public_listing_edit(uuid, text) to anon;
 grant execute on function update_public_listing(uuid, text, text, text, text, text, numeric, text) to anon;
@@ -374,6 +374,7 @@ create policy "public can read live listings"
 create or replace function scrub_expired_listing_contact()
 returns void
 language sql
+set search_path = public
 as $$
   update listings
   set whatsapp_e164 = null
@@ -385,6 +386,7 @@ $$;
 create or replace function purge_expired_listings()
 returns void
 language plpgsql
+set search_path = public
 as $$
 begin
   perform scrub_expired_listing_contact();
@@ -393,3 +395,6 @@ begin
   delete from listings where expires_at < now() - interval '7 days';
 end;
 $$;
+
+revoke all on function scrub_expired_listing_contact() from public, authenticated;
+revoke all on function purge_expired_listings() from public, authenticated;
