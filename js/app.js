@@ -1375,6 +1375,12 @@ async function openRecoveryEdit(id, editToken) {
     showHome();
     return;
   }
+  // Re-register the token in this browser's local store too, so a recovery
+  // link also restores the listing to My Listings here (e.g. after private
+  // browsing wiped localStorage, or on a different browser/device).
+  const store = getEditTokenStore();
+  store[id] = editToken;
+  setEditTokenStore(store);
   prefillPostFormForEdit(listing, editToken);
   showPost();
   safeReplaceState({ page: "post" }, location.hash);

@@ -112,6 +112,7 @@ a { color: inherit; }
   top: 0;
   z-index: 20;
   background: rgba(243, 236, 224, 0.92);
+  -webkit-backdrop-filter: blur(8px);
   backdrop-filter: blur(8px);
   border-bottom: 1px solid var(--line);
 }
@@ -263,7 +264,6 @@ body.view-home .topbar-inner .brand {
 .area-overlay-card .back-float { position: absolute; top: 12px; left: 12px; z-index: 80; width:34px; height:34px; }
 .area-overlay-card .back-float svg { width: 14px; height: 14px; display:block; }
 .area-overlay-body { display:flex; gap:16px; padding:16px; overflow:auto; }
-.area-overlay-body { -webkit-overflow-scrolling: touch; }
 .overlay-area-grid { width:320px; max-height:calc(86vh - 160px); overflow:auto; display:grid; grid-template-columns:1fr; gap:10px; padding-right:6px; }
 .overlay-area-grid button.area-card { text-align:left; padding:12px; border-radius: var(--radius-sm); background:var(--white); border: var(--border); cursor:pointer; box-shadow: var(--shadow-sm); }
 .overlay-area-grid button.area-card:hover { box-shadow: var(--shadow-md); transform: translateY(-2px); }
@@ -537,9 +537,12 @@ h1 {
   overflow-y: auto;
   scrollbar-width: thin;
   /* fades the last row so the cut-off reads as "more below", not a bug */
-  mask-image: linear-gradient(to bottom, #000 calc(100% - 24px), transparent 100%);
   -webkit-mask-image: linear-gradient(to bottom, #000 calc(100% - 24px), transparent 100%);
+  mask-image: linear-gradient(to bottom, #000 calc(100% - 24px), transparent 100%);
 }
+/* scrollbar-width above covers Firefox; this covers Chrome/Safari, which don't yet support it */
+#boardRows::-webkit-scrollbar { width: 6px; }
+#boardRows::-webkit-scrollbar-thumb { background: var(--line); border-radius: 3px; }
 
 .board-row {
   display: grid;
@@ -672,9 +675,12 @@ h1 {
   overflow-y: auto;
   scrollbar-width: thin;
   padding-bottom: 4px;
-  mask-image: linear-gradient(to bottom, #000 calc(100% - 28px), transparent 100%);
   -webkit-mask-image: linear-gradient(to bottom, #000 calc(100% - 28px), transparent 100%);
+  mask-image: linear-gradient(to bottom, #000 calc(100% - 28px), transparent 100%);
 }
+/* scrollbar-width above covers Firefox; this covers Chrome/Safari, which don't yet support it */
+.area-grid::-webkit-scrollbar { width: 6px; }
+.area-grid::-webkit-scrollbar-thumb { background: var(--line); border-radius: 3px; }
 
 .area-card {
   background: var(--white);
@@ -819,6 +825,7 @@ h1 {
   top: 0;
   z-index: 20;
   background: rgba(243, 236, 224, 0.94);
+  -webkit-backdrop-filter: blur(8px);
   backdrop-filter: blur(8px);
   border-bottom: 1px solid var(--line);
 }
