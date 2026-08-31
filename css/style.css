@@ -915,18 +915,6 @@ h1 {
 }
 
 .modal-note { font-size: 12px; color: var(--ink-soft); text-align: center; margin: 4px 0 0; }
-.recovery-warning { color: var(--ink); font-size: 14px; line-height: 1.5; margin: 0 0 14px; }
-.recovery-link {
-  width: 100%;
-  padding: 10px 12px;
-  border: var(--border);
-  border-radius: var(--radius-sm);
-  background: var(--sand);
-  color: var(--ink);
-  font-family: var(--font-mono);
-  font-size: 12px;
-}
-.recovery-link:focus { outline: 2px solid var(--teal); outline-offset: 1px; }
 .review-actions .btn { text-decoration: none; }
 
 /* ---- Consistency fixes: these classes were used in index.html/app.js

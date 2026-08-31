@@ -41,7 +41,7 @@ Supabase provides a hosted Postgres database with an auto-generated REST API. Th
 
 The public API key committed in this repo is a publishable key (`sb_publishable_...`), which is designed to be safely exposed in client-side code. Actual protection is enforced at the database level via Row Level Security (RLS) plus a set of `security definer` RPCs — anon has no direct insert/update/delete grant on `listings`, only on these functions:
 
-- `create_public_listing(...)` — creates a listing and a matching row in `listing_edit_sessions`, returning a one-time edit token (never stored in plain text — only its hash is).
+- `create_public_listing(...)` — creates a listing and a matching row in `listing_edit_sessions`, returning an edit token (never stored in plain text — only its hash is).
 - `begin_public_listing_edit(id, token)` — opens a 10-minute edit lease on a listing the caller already has the token for.
 - `update_public_listing(...)` — only succeeds while that lease is open and the token matches; enforced entirely inside the function, not just client-side.
 - `get_listing_for_owner(id, token)` — lets a verified owner see their own listing even if it's `'reported'` or expired, which the public select policy otherwise hides. Powers the My Listings page.
@@ -49,14 +49,6 @@ The public API key committed in this repo is a publishable key (`sb_publishable_
 - `report_listing(id, reason?)` — the only writer of `listing_reports` and `listings.report_count`.
 
 RLS policies limit public reads to `status = 'active' and expires_at > now()`, so the 30-day expiry isn't a background job — it's simply part of what's considered "visible."
-
-Post-publish recovery link
-
-There are no accounts, so the edit token handed back by `create_public_listing()` is the only way to ever manage a listing again. After publishing, the app shows a dedicated "save this link" modal (not just a toast) with:
-- A read-only field containing a recovery link (`#edit=<listingId>.<editToken>`) — the token stays in the URL fragment, so it's never sent to Netlify or Supabase in a request.
-- A "Copy link" button.
-- A "Send to my WhatsApp" button — a `wa.me` link pre-filled with the recovery link, so the poster can message it to themselves.
-Opening a saved recovery link re-validates ownership, opens a fresh edit lease, and drops the visitor straight into the edit form.
 
 Abuse prevention (server-side)
 
@@ -78,8 +70,9 @@ My Listings, editing, and deleting
 - `#my-listings` (a real page, same pattern as Post/Search) lists everything this browser has posted, read from the `kwetu_edit_tokens_v1` localStorage map the post flow writes to — `{ [listingId]: editToken }`. There's still no account system; "yours" means "this browser has the token for it."
 - The edit token is permanent — it's never deleted after first use, so the same browser can open more edit sessions, or delete the listing, at any time later.
 - `get_listing_for_owner(p_listing_id, p_edit_token)` is a `security definer` RPC that fetches a listing for its verified owner even if the public RLS select policy would otherwise hide it (status `'reported'`, or past `expires_at`) — it's the only way My Listings can show what actually happened to a listing instead of it just silently vanishing.
-- Editing reuses the existing Post page/form/review-veil wholesale — `handleEditClick()` (or opening a saved recovery link, see above) opens a fresh 10-minute lease via `begin_public_listing_edit()`, pre-fills every field, and the same "Confirm" button calls `update_public_listing()` instead of `create_public_listing()`.
+- Editing reuses the existing Post page/form/review-veil wholesale — `handleEditClick()` opens a fresh 10-minute lease via `begin_public_listing_edit()`, pre-fills every field, and the same "Confirm" button calls `update_public_listing()` instead of `create_public_listing()`.
 - Deleting calls `delete_public_listing(p_listing_id, p_edit_token)` behind a confirm step; no edit lease is required for a delete.
+- If the browser's local listing token is lost, the listing has no self-service recovery path; support staff edit it manually in the database.
 
 Reporting a listing
 - `report_listing(p_listing_id, p_reason?)` is a `security definer` RPC — anon has no direct write access to `listing_reports` or to `listings.report_count`, this function is the only path.

@@ -782,53 +782,6 @@ function forgetListingToken(id) {
   setEditTokenStore(store);
 }
 
-const listingRecoveryVeil = document.getElementById("listingRecoveryVeil");
-const listingRecoveryLink = document.getElementById("listingRecoveryLink");
-const recoveryLinkNote = document.getElementById("recoveryLinkNote");
-
-function recoveryUrlFor(id, editToken) {
-  return `${location.href.split("#")[0]}#edit=${id}.${editToken}`;
-}
-
-function showRecoveryVeil(id, editToken, whatsappE164) {
-  const recoveryUrl = recoveryUrlFor(id, editToken);
-  if (listingRecoveryLink) listingRecoveryLink.value = recoveryUrl;
-  if (recoveryLinkNote) recoveryLinkNote.textContent = "";
-
-  const shareLink = document.getElementById("shareRecoveryLinkBtn");
-  if (shareLink) {
-    const phone = String(whatsappE164 || "").replace(/\D/g, "");
-    const message = encodeURIComponent(`My Kwetu Kuwait listing recovery link: ${recoveryUrl}`);
-    shareLink.href = `https://wa.me/${phone}?text=${message}`;
-  }
-
-  reviewVeil.classList.remove("open");
-  if (listingRecoveryVeil) listingRecoveryVeil.classList.add("open");
-}
-
-function closeRecoveryVeil() {
-  if (listingRecoveryVeil) listingRecoveryVeil.classList.remove("open");
-  resetPostFormForCreate();
-  goToHome();
-}
-
-const copyRecoveryLinkBtn = document.getElementById("copyRecoveryLinkBtn");
-if (copyRecoveryLinkBtn) {
-  copyRecoveryLinkBtn.addEventListener("click", async () => {
-    if (!listingRecoveryLink) return;
-    try {
-      await navigator.clipboard.writeText(listingRecoveryLink.value);
-      if (recoveryLinkNote) recoveryLinkNote.textContent = "Link copied. Keep it somewhere private.";
-    } catch (e) {
-      listingRecoveryLink.focus();
-      listingRecoveryLink.select();
-      if (recoveryLinkNote) recoveryLinkNote.textContent = "Select and copy this link before leaving.";
-    }
-  });
-}
-const closeRecoveryVeilBtn = document.getElementById("closeRecoveryVeilBtn");
-if (closeRecoveryVeilBtn) closeRecoveryVeilBtn.addEventListener("click", closeRecoveryVeil);
-
 // Tracks which listing is currently being edited via the Post page, so the
 // shared review-and-confirm flow knows whether to create or update. null
 // means "posting a brand-new listing" (the default/original behaviour).
@@ -1347,11 +1300,6 @@ document.getElementById("reviewConfirmBtn").addEventListener("click", async () =
     const store = getEditTokenStore();
     store[data.id] = data.editToken;
     setEditTokenStore(store);
-    confirmBtn.textContent = "Listing posted";
-    resetConsentCheckbox();
-    refreshAreaCounts();
-    showRecoveryVeil(data.id, data.editToken, payload.whatsappE164);
-    return;
   }
 
   confirmBtn.textContent = isEditing ? "Saved ✓" : "Listing posted ✓";
@@ -1360,40 +1308,10 @@ document.getElementById("reviewConfirmBtn").addEventListener("click", async () =
   goBackShortly();
 });
 
-async function openRecoveryEdit(id, editToken) {
-  if (typeof getListingForOwner !== "function" || typeof beginListingEdit !== "function") {
-    showHome();
-    return;
-  }
-  const { data: listing, error: fetchError } = await getListingForOwner(id, editToken);
-  if (fetchError || !listing) {
-    showHome();
-    return;
-  }
-  const { error: leaseError } = await beginListingEdit(id, editToken);
-  if (leaseError) {
-    showHome();
-    return;
-  }
-  // Re-register the token in this browser's local store too, so a recovery
-  // link also restores the listing to My Listings here (e.g. after private
-  // browsing wiped localStorage, or on a different browser/device).
-  const store = getEditTokenStore();
-  store[id] = editToken;
-  setEditTokenStore(store);
-  prefillPostFormForEdit(listing, editToken);
-  showPost();
-  safeReplaceState({ page: "post" }, location.hash);
-}
-
 // Land on the right page directly if someone opens/refreshes with a deep link
 if (location.hash === "#post-room") {
   safeReplaceState({ page: "post" }, "#post-room");
   showPost();
-} else if (location.hash.startsWith("#edit=")) {
-  const [id, editToken] = location.hash.slice(6).split(".");
-  if (id && editToken) openRecoveryEdit(id, editToken);
-  else safeReplaceState({ page: "home" }, "#");
 } else if (location.hash.startsWith("#area-")) {
   const slug = location.hash.replace("#area-", "");
   const matchedArea = AREAS.find((a) => a.name.toLowerCase() === slug);
