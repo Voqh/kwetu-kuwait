@@ -1130,6 +1130,29 @@ const postForm = document.getElementById("postForm");
 const reviewVeil = document.getElementById("reviewVeil");
 const postFormNote = document.getElementById("postFormNote");
 
+// ---- Client-side error logging (listing writes only) ----
+// Failed create/update RPC calls previously only surfaced in the browser
+// console + a temporary on-screen debug line — invisible unless someone is
+// actively watching that one tab. This posts a minimal, PII-free note
+// (no phone number, no description/content) to a webhook so failures show
+// up somewhere Kelvin actually checks. Set ERROR_WEBHOOK_URL to enable it;
+// left empty, this silently no-ops and nothing else changes.
+const ERROR_WEBHOOK_URL = "https://discord.com/api/webhooks/1544710132863205487/WeOilR5eBK5uPXhLGhIZgvRwbCIQ6afUOsovSI89n4RwXO69ycP3BaOpaSq12Uj7wG5H"; // e.g. a Discord channel webhook URL
+function logClientError(context, error) {
+  if (!ERROR_WEBHOOK_URL) return;
+  try {
+    fetch(ERROR_WEBHOOK_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        content: `⚠️ Kwetu error [${context}]: ${error && error.message ? error.message : String(error)} — ${new Date().toISOString()}`,
+      }),
+    }).catch(() => {}); // logging must never itself break the submit flow
+  } catch (e) {
+    /* fetch unavailable or blocked — fail silently, never surface to the user */
+  }
+}
+
 function setFieldError(id, message) {
   const el = document.getElementById(id);
   if (el) el.textContent = message || "";
@@ -1278,6 +1301,7 @@ document.getElementById("reviewConfirmBtn").addEventListener("click", async () =
 
   if (error) {
     console.error("[Kwetu] publish/save RPC failed:", error);
+    logClientError(isEditing ? "update_public_listing" : "create_public_listing", error);
     confirmBtn.disabled = false;
     confirmBtn.textContent = isEditing ? "Save changes" : "Confirm and publish";
     const friendly = isEditing
