@@ -20,7 +20,7 @@ function getClient() {
 }
 
 // Generates a random 64+ char token used as the permanent "proof of
-// ownership" for a listing. It's never stored in the database in plain
+// poster access" for a listing. It's never stored in the database in plain
 // text — only its hash is (see create_public_listing in schema.sql).
 // The raw token stays in the visitor's own browser (localStorage), which
 // is what lets them edit their own listing later without an account.
@@ -142,7 +142,7 @@ async function reportListing(id, reason) {
   return { data, error };
 }
 
-// Fetches one listing on behalf of its owner, proven by their locally-stored
+// Fetches one listing on behalf of its poster, proven by their locally-stored
 // edit token — via get_listing_for_owner() this works even if the listing
 // is currently 'reported' or expired, unlike the public RLS-gated select.
 // Powers the "My Listings" page.

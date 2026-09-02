@@ -89,7 +89,7 @@
         <div class="how-card how-card--post" id="howPostCard" role="button" tabindex="0" aria-label="Post a room">
           <span class="how-tag">POST</span>
           <h3>Got a spare bed or partition?</h3>
-          <p>Drop the area, the price, and your WhatsApp number. It goes live right away, no sign-up, and quietly expires in 30 days so the board never fills with stale listings.</p>
+          <p>Drop the area, the price, and your WhatsApp number. Publish your listing in seconds, no sign-up, and it quietly expires in 30 days so the board never fills with stale listings.</p>
         </div>
         <div class="how-card how-card--search" id="howSearchCard" role="button" tabindex="0" aria-label="Search for a room">
           <span class="how-tag">SEARCH</span>
@@ -267,7 +267,7 @@
   <div class="review-veil" id="reviewVeil">
     <div class="review-modal" role="dialog" aria-modal="true" aria-labelledby="reviewTitle">
       <p class="eyebrow" id="reviewTitle">Review before you publish</p>
-      <dl class="review-list">
+      <dl class="review-list review-summary-card">
         <div class="review-row"><dt>Area</dt><dd id="reviewArea"></dd></div>
         <div class="review-row"><dt>Block</dt><dd id="reviewBlock"></dd></div>
         <div class="review-row"><dt>Type</dt><dd id="reviewType"></dd></div>
@@ -276,16 +276,9 @@
         <div class="review-row"><dt>WhatsApp</dt><dd id="reviewPhone"></dd></div>
       </dl>
       <div class="review-consent">
-        <label class="consent-check" for="whatsappConsentCheckbox">
-          <input type="checkbox" id="whatsappConsentCheckbox">
-          <span>I consent to my WhatsApp number being displayed publicly on this listing</span>
-        </label>
-        <span class="field-error" id="whatsappConsentError"></span>
-      </div>
-      <div class="review-consent">
         <label class="consent-check" for="consentCheckbox">
           <input type="checkbox" id="consentCheckbox">
-          <span>I agree to the <a href="terms.html" target="_blank" rel="noopener">Terms of Service</a> and <a href="privacy.html" target="_blank" rel="noopener">Privacy Policy</a></span>
+          <span>By publishing, I confirm I have the right to advertise this accommodation, consent to my WhatsApp number being displayed publicly, and agree to the <a href="terms.html" target="_blank" rel="noopener">Terms of Service</a> and <a href="privacy.html" target="_blank" rel="noopener">Privacy Policy</a>.</span>
         </label>
         <span class="field-error" id="consentError"></span>
       </div>

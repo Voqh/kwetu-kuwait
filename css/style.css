@@ -184,7 +184,15 @@ body.view-home .topbar-inner .brand {
   width: calc(100% - 48px);
   box-shadow: 0 20px 48px rgba(0,0,0,0.18);
 }
-.review-list { margin: 12px 0 16px; }
+.review-list { margin: 12px 0 20px; }
+.review-summary-card {
+  position: relative;
+  padding: 16px 18px;
+  background: var(--sand);
+  border: 1px solid var(--sand-deep);
+  border-radius: var(--radius-sm);
+  box-shadow: inset 0 3px 0 var(--amber);
+}
 .review-row { display:flex; gap:12px; margin:8px 0; align-items: baseline; }
 .review-row dt {
   width: 100px;
@@ -995,16 +1003,15 @@ h1 {
    .field-error pattern as the form fields above it. */
 .review-consent {
   margin: 4px 0 16px;
-  padding-top: 14px;
-  border-top: 1px solid var(--line);
+  padding-top: 0;
 }
 .consent-check {
   display: flex;
   align-items: flex-start;
   gap: 10px;
   cursor: pointer;
-  font-size: 13.5px;
-  color: var(--ink);
+  font-size: 12.5px;
+  color: var(--ink-soft);
   line-height: 1.4;
 }
 .consent-check input[type="checkbox"] {
@@ -1023,6 +1030,13 @@ h1 {
 }
 .consent-check a:hover { color: var(--teal); }
 .review-consent .field-error { display: block; margin-top: 6px; margin-left: 27px; }
+
+.listing-contact-note {
+  margin: 5px 0 0;
+  color: var(--ink-soft);
+  font-size: 11.5px;
+  line-height: 1.4;
+}
 
 /* ---- Listing card icons: report flag, bottom-right ---- */
 .listing-card { position: relative; padding-bottom: 34px; }
@@ -1087,7 +1101,7 @@ h1 {
   .mylistings-float-icon svg { width: 22px; height: 22px; }
 }
 
-/* Owner actions (Edit/Delete) replace the public report/pin row on My
+/* Poster actions (Edit/Delete) replace the public report/pin row on My
    Listings cards — same slot, same pill-button language as .listing-report. */
 .mylisting-actions { position: static; margin-top: 10px; justify-content: flex-end; }
 .mylisting-edit, .mylisting-delete {

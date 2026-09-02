@@ -685,33 +685,21 @@ if (areaInput) {
 // ---- Consent checkbox ----
 // Lives on the review step — by the time someone reaches review, they've
 // already filled in the whole form, so this is the natural last checkpoint
-// before anything is written to the database. This checkbox gates publish:
-// no consent, no write. It resets to unchecked whenever a fresh posting or
-// editing session starts (see resetPostForm / handleEditClick), so it always
-// means "I agree, for this listing" rather than carrying over stale state —
-// but it isn't re-cleared on every trip back and forth between the form and
-// the review step within the same session, so fixing a typo before
-// confirming doesn't force re-ticking it.
+// before anything is written to the database. This single checkbox gates
+// publish: no consent, no write. It resets to unchecked whenever a fresh
+// posting or editing session starts, so it always means "I agree, for this
+// listing" rather than carrying over stale state.
 const consentCheckbox = document.getElementById("consentCheckbox");
 const consentError = document.getElementById("consentError");
-const whatsappConsentCheckbox = document.getElementById("whatsappConsentCheckbox");
 
 function resetConsentCheckbox() {
   if (consentCheckbox) consentCheckbox.checked = false;
   setFieldError("consentError", "");
-  if (whatsappConsentCheckbox) whatsappConsentCheckbox.checked = false;
-  setFieldError("whatsappConsentError", "");
 }
 
 if (consentCheckbox) {
   consentCheckbox.addEventListener("change", () => {
     if (consentCheckbox.checked) setFieldError("consentError", "");
-  });
-}
-
-if (whatsappConsentCheckbox) {
-  whatsappConsentCheckbox.addEventListener("change", () => {
-    if (whatsappConsentCheckbox.checked) setFieldError("whatsappConsentError", "");
   });
 }
 
@@ -912,7 +900,7 @@ if (deleteConfirmBtn) {
 
 // Card markup for a listing the visitor themselves posted: same base
 // .listing-card look, but with Edit/Delete instead of the public
-// report icon, since owners don't report their own listings.
+// report icon, since posters don't report their own listings.
 function renderMyListingCard(item, editToken) {
   const card = document.createElement("div");
   card.className = "listing-card";
@@ -1242,15 +1230,8 @@ document.addEventListener("keydown", (e) => {
 document.getElementById("reviewConfirmBtn").addEventListener("click", async () => {
   const confirmBtn = document.getElementById("reviewConfirmBtn");
 
-  if (!whatsappConsentCheckbox || !whatsappConsentCheckbox.checked) {
-    setFieldError("whatsappConsentError", "Please consent to your WhatsApp number being displayed publicly to continue");
-    if (whatsappConsentCheckbox) whatsappConsentCheckbox.focus();
-    return;
-  }
-  setFieldError("whatsappConsentError", "");
-
   if (!consentCheckbox || !consentCheckbox.checked) {
-    setFieldError("consentError", "Please agree to the Terms of Service and Privacy Policy to continue");
+    setFieldError("consentError", "Please confirm your authorization, public WhatsApp display, and agreement to the Terms and Privacy Policy to continue");
     if (consentCheckbox) consentCheckbox.focus();
     return;
   }
@@ -1317,7 +1298,7 @@ document.getElementById("reviewConfirmBtn").addEventListener("click", async () =
     return;
   }
 
-  // Remember this listing's id + edit token locally so its owner can edit
+  // Remember this listing's id + edit token locally so its poster can edit
   // it later — this is the only place the raw token ever exists outside
   // the moment it was generated. (When editing, the token's already stored.)
   if (!isEditing && data && data.id && data.editToken) {
@@ -1592,6 +1573,7 @@ function renderListingsToContainer(list, container) {
           ${item.rentKwd != null ? `<span class="listing-rent">${item.rentKwd} KD/month</span>` : ''}
         </div>
         <a class="listing-phone" href="https://wa.me/${(item.whatsapp||'').replace(/\D/g,'')}" target="_blank" rel="noopener">${escapeHtml(item.whatsapp)}</a>
+        <p class="listing-contact-note">Kwetu only provides the platform for discovering and contacting accommodation providers. Any viewing, negotiation, payment, or agreement happens directly between you and the poster.</p>
       </div>
       ${cardIconsHtml(item)}
     `;
@@ -1706,6 +1688,7 @@ function renderListingCards(list) {
           ${item.rentKwd != null ? `<span class="listing-rent">${item.rentKwd} KD/month</span>` : ''}
         </div>
         <a class="listing-phone" href="https://wa.me/${waNumber}?text=${waText}" target="_blank" rel="noopener">${escapeHtml(item.whatsapp)}</a>
+        <p class="listing-contact-note">Kwetu only provides the platform for discovering and contacting accommodation providers. Any viewing, negotiation, payment, or agreement happens directly between you and the poster.</p>
       </div>
       ${cardIconsHtml(item)}
     `;

@@ -20,10 +20,10 @@ alter table listings alter column type drop not null;
 
 -- Edit secrets are kept in a separate table with no public read access.
 -- token_hash is permanent (never deleted after a successful edit) — it's
--- the visitor's only proof of ownership for their listing, forever, since
+-- the visitor's only proof of control over their listing, forever, since
 -- there are no accounts. edit_lease_expires_at is NOT the token's lifetime;
 -- it's a short (10-minute) window during which an edit/save is allowed,
--- re-opened each time the owner starts editing (see begin_public_listing_edit).
+-- re-opened each time the poster starts editing (see begin_public_listing_edit).
 create table if not exists listing_edit_sessions (
   listing_id            uuid primary key references listings(id) on delete cascade,
   token_hash            text not null,
@@ -227,7 +227,7 @@ begin
   end if;
 
   -- Close the lease WITHOUT deleting the row: token_hash must survive so
-  -- the owner can open another edit (or delete the listing) later.
+  -- the poster can open another edit (or delete the listing) later.
   update listing_edit_sessions
   set editing_started_at = null, edit_lease_expires_at = now()
   where listing_id = p_listing_id;
@@ -282,10 +282,10 @@ begin
 end;
 $$;
 
--- Lets a verified owner see their own listing even if it's currently
+-- Lets a poster with the matching edit token see their own listing even if it's currently
 -- 'reported' or past expires_at — states the public select policy already
 -- excludes. security definer bypasses RLS; the token check is what stands
--- in for "ownership" since there are no accounts. Powers the My Listings page.
+-- in for token matching since there are no accounts. Powers the My Listings page.
 create or replace function get_listing_for_owner(p_listing_id uuid, p_edit_token text)
 returns table (
   id uuid, area text, block text, type text, description text, rent_kwd numeric,
@@ -316,7 +316,7 @@ begin
 end;
 $$;
 
--- Deletes a listing given its (permanent) ownership token. No edit lease
+-- Deletes a listing given its permanent edit token. No edit lease
 -- required — deleting your own listing shouldn't need an open edit window.
 -- listing_edit_sessions cascades on delete, so the token is cleaned up too.
 create or replace function delete_public_listing(p_listing_id uuid, p_edit_token text)

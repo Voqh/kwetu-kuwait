@@ -44,8 +44,8 @@ The public API key committed in this repo is a publishable key (`sb_publishable_
 - `create_public_listing(...)` — creates a listing and a matching row in `listing_edit_sessions`, returning an edit token (never stored in plain text — only its hash is).
 - `begin_public_listing_edit(id, token)` — opens a 10-minute edit lease on a listing the caller already has the token for.
 - `update_public_listing(...)` — only succeeds while that lease is open and the token matches; enforced entirely inside the function, not just client-side.
-- `get_listing_for_owner(id, token)` — lets a verified owner see their own listing even if it's `'reported'` or expired, which the public select policy otherwise hides. Powers the My Listings page.
-- `delete_public_listing(id, token)` — deletes a listing given its (permanent) ownership token. No open edit lease required.
+- `get_listing_for_owner(id, token)` — lets a poster with the matching edit token see their own listing even if it's `'reported'` or expired, which the public select policy otherwise hides. Powers the My Listings page.
+- `delete_public_listing(id, token)` — deletes a listing given its permanent edit token. No open edit lease required.
 - `report_listing(id, reason?)` — the only writer of `listing_reports` and `listings.report_count`.
 
 RLS policies limit public reads to `status = 'active' and expires_at > now()`, so the 30-day expiry isn't a background job — it's simply part of what's considered "visible."
@@ -69,7 +69,7 @@ Applying migrations
 My Listings, editing, and deleting
 - `#my-listings` (a real page, same pattern as Post/Search) lists everything this browser has posted, read from the `kwetu_edit_tokens_v1` localStorage map the post flow writes to — `{ [listingId]: editToken }`. There's still no account system; "yours" means "this browser has the token for it."
 - The edit token is permanent — it's never deleted after first use, so the same browser can open more edit sessions, or delete the listing, at any time later.
-- `get_listing_for_owner(p_listing_id, p_edit_token)` is a `security definer` RPC that fetches a listing for its verified owner even if the public RLS select policy would otherwise hide it (status `'reported'`, or past `expires_at`) — it's the only way My Listings can show what actually happened to a listing instead of it just silently vanishing.
+- `get_listing_for_owner(p_listing_id, p_edit_token)` is a `security definer` RPC that fetches a listing for a poster with the matching edit token even if the public RLS select policy would otherwise hide it (status `'reported'`, or past `expires_at`) — it's the only way My Listings can show what actually happened to a listing instead of it just silently vanishing.
 - Editing reuses the existing Post page/form/review-veil wholesale — `handleEditClick()` opens a fresh 10-minute lease via `begin_public_listing_edit()`, pre-fills every field, and the same "Confirm" button calls `update_public_listing()` instead of `create_public_listing()`.
 - Deleting calls `delete_public_listing(p_listing_id, p_edit_token)` behind a confirm step; no edit lease is required for a delete.
 - If the browser's local listing token is lost, the listing has no self-service recovery path; support staff edit it manually in the database.
