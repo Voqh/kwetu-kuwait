@@ -1137,7 +1137,7 @@ const postFormNote = document.getElementById("postFormNote");
 // (no phone number, no description/content) to a webhook so failures show
 // up somewhere Kelvin actually checks. Set ERROR_WEBHOOK_URL to enable it;
 // left empty, this silently no-ops and nothing else changes.
-const ERROR_WEBHOOK_URL = "https://discord.com/api/webhooks/1544710132863205487/WeOilR5eBK5uPXhLGhIZgvRwbCIQ6afUOsovSI89n4RwXO69ycP3BaOpaSq12Uj7wG5H"; // e.g. a Discord channel webhook URL
+const ERROR_WEBHOOK_URL = "https://discord.com/api/webhooks/1544730996623016067/xIYELnmbIbu5AO4q2zfjnIoVY57r7PcI2NmCiw9NrA_S3xq9-gk99c-GaWFLazjgYs7Y"; // e.g. a Discord channel webhook URL
 function logClientError(context, error) {
   if (!ERROR_WEBHOOK_URL) return;
   try {
