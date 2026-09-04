@@ -382,7 +382,7 @@ body.view-home .topbar-inner .brand {
 }
 
 .brand-text { display: flex; flex-direction: column; gap: 1px; line-height: 1; }
-.brand-name { font-family: var(--font-display); font-weight: 700; font-size: 20px; }
+.brand-name { font-family: var(--font-display); font-weight: 700; font-size: 20px; color: #164F49; }
 .brand-place {
   font-family: var(--font-mono);
   font-size: 9px;
