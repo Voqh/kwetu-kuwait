@@ -283,22 +283,42 @@ Rationale: Separation prevents a whole class of bugs (RLS column filtering is er
 
 ---
 
-## Section 5: Priority Matrix
+## Section 5: Priority Matrix (Updated Sept 4, 2026)
 
-### Do First (Blocking)
-- [x] **Deploy scheduled purge job** (prevents DB storage overflow; fixes UptimeRobot fragility) — **COMPLETE** (migration 20260905_006, netlify/functions/purge-listings.js, netlify.toml)
-- [x] **Moderation queue UI** (handles false positives gracefully) — **COMPLETE** (admin.html, moderation.js)
-- [x] **Data export + analytics** (understand abuse patterns) — **COMPLETE** (export-reports.js, report_summary view)
-- [ ] **Set up monitoring/alerting** (know when DB auto-pauses or storage fills)
+### ✅ Completed (Phase 4 Implementation)
+- [x] **Deploy scheduled purge job** (prevents DB storage overflow; fixes UptimeRobot fragility)
+  - Migration: 20260905_006_admin_functions_and_views.sql
+  - Function: netlify/functions/purge-listings.js (daily @ 03:00 UTC)
+  - Logging: purge_log table captures results for monitoring
+- [x] **Moderation queue UI** (handles false positives gracefully)
+  - Views: moderation_queue, report_summary
+  - RPCs: moderation_reinstate_listing(), moderation_delete_listing()
+  - UI: admin.html with secret-protected access
+  - API: netlify/functions/moderation.js
+- [x] **Data export + analytics** (understand abuse patterns)
+  - View: report_summary (frequency by reason, phone, area)
+  - API: netlify/functions/export-reports.js (CSV download)
+  - UI: Export button on admin.html
 
 ### Do Next (High Value, Low Effort)
-- [ ] Create `.env.example` and deployment checklist (operability)
-- [ ] Add better logging for admin actions (audit trail)
-- [ ] Better visibility on last purge time (admin page shows how long since last run)
+- [ ] **Better alerting** (know when purge fails or DB is paused)
+  - Add `last_purge_at` check to admin page
+  - Set up Slack webhook if purge_log has no entries >24h
+- [ ] Create `.env.example` (operability guide)
+- [ ] Add monitoring dashboard (weekly traffic, reports, abuse trends)
 
 ### Do Later (Medium Value, Medium Effort)
-- [ ] Token revocation (handles leaked tokens)
-- [ ] Real admin auth (upgrade from shared secret to username/password)
+- [ ] **Token revocation** (handles leaked tokens)
+  - Add optional email field to listings
+  - Implement email-based token reset link
+  - Requires paid Supabase + email integration (Sendgrid, Netlify email)
+- [ ] **Real admin auth** (upgrade from shared secret to username/password)
+  - Add admin_users table + JWT session management
+  - ~6 hours work; defer until team grows beyond 1 operator
+- [ ] **Optimistic locking** (prevent concurrent edit data loss)
+  - Add version_id column to listings
+  - Check version before updating; reject if outdated
+  - Low priority; concurrent edits are extremely rare
 
 ### Don't Do Yet (Low Priority or High Complexity)
 - [ ] Optimize for 100K users (Supabase scaling; probably move to paid tier anyway)
