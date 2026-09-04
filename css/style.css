@@ -554,7 +554,6 @@ h1 {
 #boardRows {
   max-height: 400px;
   overflow-y: auto;
-  scrollbar-width: thin;
   /* fades the last row so the cut-off reads as "more below", not a bug */
   -webkit-mask-image: linear-gradient(to bottom, #000 calc(100% - 24px), transparent 100%);
   mask-image: linear-gradient(to bottom, #000 calc(100% - 24px), transparent 100%);
@@ -692,7 +691,6 @@ h1 {
   gap: 14px;
   max-height: 380px;
   overflow-y: auto;
-  scrollbar-width: thin;
   padding-bottom: 4px;
   -webkit-mask-image: linear-gradient(to bottom, #000 calc(100% - 28px), transparent 100%);
   mask-image: linear-gradient(to bottom, #000 calc(100% - 28px), transparent 100%);

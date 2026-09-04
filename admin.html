@@ -158,6 +158,21 @@
       border-radius: 4px;
       margin-bottom: 10px;
     }
+    #content {
+      display: none;
+    }
+    #queueError {
+      display: none;
+    }
+    .export-details {
+      font-size: 12px;
+      color: #666;
+    }
+    #contentDisabled {
+      text-align: center;
+      color: #666;
+      padding: 40px;
+    }
   </style>
 </head>
 <body>
@@ -175,7 +190,7 @@
     </div>
 
     <!-- Content (hidden until authenticated) -->
-    <div id="content" style="display: none;">
+    <div id="content">
       <!-- Moderation Queue -->
       <h2>📋 Moderation Queue</h2>
       <div class="queue-stats">
@@ -189,7 +204,7 @@
         </div>
       </div>
 
-      <div id="queueError" class="error-msg" style="display: none;"></div>
+      <div id="queueError" class="error-msg"></div>
       <div id="queueTable">
         <p class="loading">Loading moderation queue...</p>
       </div>
@@ -198,10 +213,10 @@
       <h2>📊 Data Export</h2>
       <p>Download report patterns for abuse analysis.</p>
       <a href="#" id="exportLink" class="export-link">📥 Export Reports (CSV)</a>
-      <p style="font-size: 12px; color: #666;">Includes: listing ID, area, phone number, report reasons, frequency patterns.</p>
+      <p class="export-details">Includes: listing ID, area, phone number, report reasons, frequency patterns.</p>
     </div>
 
-    <div id="contentDisabled" style="text-align: center; color: #666; padding: 40px;">
+    <div id="contentDisabled">
       <p>Authenticate to access admin tools.</p>
     </div>
   </div>
