@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin — Kwetu Kuwait</title>
+  <meta name="robots" content="noindex, nofollow">
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      max-width: 1200px;
+      margin: 0;
+      padding: 20px;
+      background: #f5f5f5;
+      color: #333;
+    }
+    .container {
+      background: white;
+      border-radius: 8px;
+      padding: 20px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    h1 {
+      margin-top: 0;
+      color: #164f49;
+    }
+    h2 {
+      margin-top: 30px;
+      border-bottom: 2px solid #164f49;
+      padding-bottom: 10px;
+    }
+    .auth-box {
+      background: #fff3cd;
+      border: 1px solid #ffc107;
+      border-radius: 4px;
+      padding: 15px;
+      margin-bottom: 20px;
+    }
+    .auth-box input {
+      padding: 8px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      margin-right: 10px;
+      width: 250px;
+    }
+    .auth-box button {
+      padding: 8px 16px;
+      background: #164f49;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    .auth-box button:hover {
+      background: #0d3430;
+    }
+    .status {
+      padding: 10px;
+      border-radius: 4px;
+      margin-bottom: 10px;
+    }
+    .status.authenticated {
+      background: #d4edda;
+      color: #155724;
+    }
+    .status.error {
+      background: #f8d7da;
+      color: #721c24;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 15px;
+    }
+    th {
+      background: #f0f0f0;
+      padding: 12px;
+      text-align: left;
+      font-weight: 600;
+      border-bottom: 2px solid #164f49;
+    }
+    td {
+      padding: 12px;
+      border-bottom: 1px solid #ddd;
+      word-break: break-word;
+    }
+    tr:hover {
+      background: #f9f9f9;
+    }
+    .action-buttons {
+      display: flex;
+      gap: 8px;
+    }
+    button {
+      padding: 6px 12px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 12px;
+    }
+    .btn-reinstate {
+      background: #28a745;
+      color: white;
+    }
+    .btn-reinstate:hover {
+      background: #218838;
+    }
+    .btn-delete {
+      background: #dc3545;
+      color: white;
+    }
+    .btn-delete:hover {
+      background: #c82333;
+    }
+    .export-link {
+      display: inline-block;
+      padding: 10px 16px;
+      background: #007bff;
+      color: white;
+      text-decoration: none;
+      border-radius: 4px;
+      margin-top: 10px;
+    }
+    .export-link:hover {
+      background: #0056b3;
+    }
+    .queue-stats {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 15px;
+      margin-bottom: 20px;
+    }
+    .stat-card {
+      background: #f8f9fa;
+      border: 1px solid #dee2e6;
+      border-radius: 4px;
+      padding: 15px;
+      text-align: center;
+    }
+    .stat-card strong {
+      display: block;
+      font-size: 24px;
+      color: #164f49;
+      margin-bottom: 5px;
+    }
+    .stat-card small {
+      color: #666;
+    }
+    .loading {
+      color: #666;
+      font-style: italic;
+    }
+    .error-msg {
+      background: #f8d7da;
+      color: #721c24;
+      padding: 10px;
+      border-radius: 4px;
+      margin-bottom: 10px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🔐 Kwetu Kuwait Admin</h1>
+
+    <!-- Authentication Section -->
+    <div class="auth-box">
+      <div>
+        <label for="adminSecret">Admin Secret:</label>
+        <input type="password" id="adminSecret" placeholder="Enter admin secret">
+        <button onclick="authenticate()">Authenticate</button>
+      </div>
+      <div id="authStatus"></div>
+    </div>
+
+    <!-- Content (hidden until authenticated) -->
+    <div id="content" style="display: none;">
+      <!-- Moderation Queue -->
+      <h2>📋 Moderation Queue</h2>
+      <div class="queue-stats">
+        <div class="stat-card">
+          <strong id="queueCount">—</strong>
+          <small>Reported Listings</small>
+        </div>
+        <div class="stat-card">
+          <strong id="totalReports">—</strong>
+          <small>Total Reports</small>
+        </div>
+      </div>
+
+      <div id="queueError" class="error-msg" style="display: none;"></div>
+      <div id="queueTable">
+        <p class="loading">Loading moderation queue...</p>
+      </div>
+
+      <!-- Export -->
+      <h2>📊 Data Export</h2>
+      <p>Download report patterns for abuse analysis.</p>
+      <a href="#" id="exportLink" class="export-link">📥 Export Reports (CSV)</a>
+      <p style="font-size: 12px; color: #666;">Includes: listing ID, area, phone number, report reasons, frequency patterns.</p>
+    </div>
+
+    <div id="contentDisabled" style="text-align: center; color: #666; padding: 40px;">
+      <p>Authenticate to access admin tools.</p>
+    </div>
+  </div>
+
+  <script>
+    let adminSecret = "";
+
+    function authenticate() {
+      const secret = document.getElementById("adminSecret").value;
+      if (!secret) {
+        showAuthStatus("error", "Enter admin secret");
+        return;
+      }
+      adminSecret = secret;
+      sessionStorage.setItem("adminSecret", secret);
+      showAuthStatus("authenticated", "✓ Authenticated");
+      document.getElementById("content").style.display = "block";
+      document.getElementById("contentDisabled").style.display = "none";
+      loadQueue();
+      initExportLink();
+    }
+
+    function showAuthStatus(status, message) {
+      const el = document.getElementById("authStatus");
+      el.className = `status ${status}`;
+      el.textContent = message;
+    }
+
+    async function loadQueue() {
+      try {
+        const res = await fetch(`/.netlify/functions/moderation?action=queue`, {
+          headers: { "x-admin-secret": adminSecret },
+        });
+
+        if (!res.ok) {
+          if (res.status === 401) {
+            showAuthStatus("error", "✗ Auth failed. Invalid secret.");
+            document.getElementById("content").style.display = "none";
+            document.getElementById("contentDisabled").style.display = "block";
+            adminSecret = "";
+            sessionStorage.removeItem("adminSecret");
+            return;
+          }
+          throw new Error(`HTTP ${res.status}`);
+        }
+
+        const { queue } = await res.json();
+        renderQueue(queue);
+      } catch (err) {
+        const el = document.getElementById("queueError");
+        el.style.display = "block";
+        el.textContent = `Error loading queue: ${err.message}`;
+      }
+    }
+
+    function renderQueue(queue) {
+      const container = document.getElementById("queueTable");
+      const totalReports = queue.reduce((sum, item) => sum + item.report_count, 0);
+
+      document.getElementById("queueCount").textContent = queue.length;
+      document.getElementById("totalReports").textContent = totalReports;
+
+      if (queue.length === 0) {
+        container.innerHTML = "<p style='color: #28a745;'>✓ Moderation queue is empty</p>";
+        return;
+      }
+
+      let html = `<table>
+        <thead>
+          <tr>
+            <th>Listing</th>
+            <th>Area</th>
+            <th>Reports</th>
+            <th>Reasons</th>
+            <th>Posted</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>`;
+
+      queue.forEach((item) => {
+        const reasons = item.report_reasons ? item.report_reasons.join(", ") : "(none)";
+        const posted = new Date(item.created_at).toLocaleDateString("en-GB");
+
+        html += `<tr>
+          <td><code>${item.id.substring(0, 8)}...</code></td>
+          <td>${item.area}</td>
+          <td><strong>${item.report_count}</strong></td>
+          <td><small>${reasons}</small></td>
+          <td>${posted}</td>
+          <td>
+            <div class="action-buttons">
+              <button class="btn-reinstate" onclick="reinstate('${item.id}')">Reinstate</button>
+              <button class="btn-delete" onclick="deleteConfirm('${item.id}')">Delete</button>
+            </div>
+          </td>
+        </tr>`;
+      });
+
+      html += "</tbody></table>";
+      container.innerHTML = html;
+    }
+
+    async function reinstate(listingId) {
+      if (!confirm("Reinstate this listing (set back to active)?")) return;
+
+      try {
+        const res = await fetch(
+          `/.netlify/functions/moderation?action=reinstate&listing_id=${listingId}`,
+          { headers: { "x-admin-secret": adminSecret } }
+        );
+
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+
+        alert("✓ Listing reinstated");
+        loadQueue();
+      } catch (err) {
+        alert(`Error: ${err.message}`);
+      }
+    }
+
+    async function deleteConfirm(listingId) {
+      if (!confirm("Permanently delete this listing? (Cannot be undone)")) return;
+
+      try {
+        const res = await fetch(
+          `/.netlify/functions/moderation?action=delete&listing_id=${listingId}`,
+          { headers: { "x-admin-secret": adminSecret } }
+        );
+
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+
+        alert("✓ Listing deleted");
+        loadQueue();
+      } catch (err) {
+        alert(`Error: ${err.message}`);
+      }
+    }
+
+    function initExportLink() {
+      document.getElementById("exportLink").onclick = (e) => {
+        e.preventDefault();
+        const url = `/.netlify/functions/export-reports`;
+        const xhr = new XMLHttpRequest();
+        xhr.open("GET", url);
+        xhr.setRequestHeader("x-admin-secret", adminSecret);
+        xhr.responseType = "blob";
+        xhr.onload = () => {
+          if (xhr.status === 200) {
+            const blob = new Blob([xhr.response], { type: "text/csv" });
+            const link = document.createElement("a");
+            link.href = URL.createObjectURL(blob);
+            link.download = `kwetu-reports-${new Date().toISOString().split("T")[0]}.csv`;
+            link.click();
+          } else {
+            alert("Export failed");
+          }
+        };
+        xhr.onerror = () => alert("Export error");
+        xhr.send();
+      };
+    }
+
+    // Restore auth from session if available
+    window.addEventListener("load", () => {
+      const saved = sessionStorage.getItem("adminSecret");
+      if (saved) {
+        document.getElementById("adminSecret").value = saved;
+        authenticate();
+      }
+    });
+  </script>
+</body>
+</html>

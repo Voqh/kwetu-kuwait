@@ -1,0 +1,11 @@
+# Netlify configuration snippet for scheduled purge function
+# Add these sections to your existing netlify.toml file
+
+# Scheduled functions
+[[functions]]
+  directory = "netlify/functions"
+
+# Scheduled purge job: runs daily at 03:00 UTC (off-peak)
+[[scheduled_functions]]
+  name = "purge-listings"
+  schedule = "0 3 * * *"
