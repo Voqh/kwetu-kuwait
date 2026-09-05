@@ -76,6 +76,12 @@ const AREAS = [
   { name: "Qadsiya",        open: 0, status: "full", tier: "other" },
   { name: "Mansouriya",     open: 0, status: "full", tier: "other" },
   { name: "Rawda",          open: 0, status: "full", tier: "other" },
+  { name: "Sabah al Salem", open: 0, status: "full", tier: "other" },
+  { name: "Mubarak Al-Kabeer",    open: 0, status: "full", tier: "other" },
+  { name: "Mubarak Al-Abdulla",   open: 0, status: "full", tier: "other" },
+  { name: "Subiya",        open: 0, status: "full", tier: "other" },
+  { name: "Doha",          open: 0, status: "full", tier: "other" },
+  { name: "Sabah Al-Jaber Al-Sabah", open: 0, status: "full", tier: "other" },
   { name: "Other",          open: 0, status: "full", tier: "other" },
 ];
 
