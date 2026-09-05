@@ -1,9 +1,8 @@
 # Netlify configuration for Kwetu Kuwait
 
-# Build configuration — static site, publish from root
+# Build configuration - static site, publish from root
 [build]
   publish = "."
-  command = ""
 
 # Scheduled functions
 [[functions]]
