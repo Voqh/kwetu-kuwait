@@ -7,5 +7,6 @@ dist/
 build/
 *.log
 .DS_Store
+.env
 .env.local
 .env*.local
