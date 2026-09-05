@@ -1,5 +1,9 @@
-# Netlify configuration snippet for scheduled purge function
-# Add these sections to your existing netlify.toml file
+# Netlify configuration for Kwetu Kuwait
+
+# Build configuration — static site, publish from root
+[build]
+  publish = "."
+  command = ""
 
 # Scheduled functions
 [[functions]]
