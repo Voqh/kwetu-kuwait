@@ -1,9 +1,8 @@
 [build]
 publish = "."
 
-[[functions]]
+[functions]
 directory = "netlify/functions"
 
-[[scheduled_functions]]
-name = "purge-listings"
+[functions."purge-listings"]
 schedule = "0 3 * * *"
