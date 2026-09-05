@@ -1,14 +1,9 @@
-# Netlify configuration for Kwetu Kuwait
-
-# Build configuration - static site, publish from root
 [build]
-  publish = "."
+publish = "."
 
-# Scheduled functions
 [[functions]]
-  directory = "netlify/functions"
+directory = "netlify/functions"
 
-# Scheduled purge job: runs daily at 03:00 UTC (off-peak)
 [[scheduled_functions]]
-  name = "purge-listings"
-  schedule = "0 3 * * *"
+name = "purge-listings"
+schedule = "0 3 * * *"
