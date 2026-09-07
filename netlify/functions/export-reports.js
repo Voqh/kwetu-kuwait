@@ -59,7 +59,9 @@ export default async (req, context) => {
 
   try {
     // Fetch report summary data
+    // Query admin schema (restricted to service role key via Netlify environment)
     const { data, error } = await supabase
+      .schema("admin")
       .from("report_summary")
       .select("*")
       .limit(1000);

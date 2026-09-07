@@ -41,7 +41,9 @@ export default async (req, context) => {
   try {
     if (action === "queue") {
       // List moderation queue (all reported listings)
+      // Query admin schema (restricted to service role key via Netlify environment)
       const { data, error } = await supabase
+        .schema("admin")
         .from("moderation_queue")
         .select("*")
         .limit(100);
