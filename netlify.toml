@@ -17,7 +17,7 @@ for = "/*"
   X-XSS-Protection = "1; mode=block"
   Referrer-Policy = "no-referrer-when-downgrade"
   Permissions-Policy = "geolocation=(), microphone=(), camera=()"
-  Content-Security-Policy = "default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://fonts.googleapis.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https://*.supabase.co; frame-ancestors 'none';"
+  Content-Security-Policy = "default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://fonts.googleapis.com https://www.googletagmanager.com https://www.google-analytics.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https://*.supabase.co https://www.google-analytics.com https://www.googletagmanager.com https://*.google-analytics.com; frame-ancestors 'none';"
 
 # Cache control for static assets
 [[headers]]
