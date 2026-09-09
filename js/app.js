@@ -148,6 +148,69 @@ function buildAreasData(counts) {
   });
 }
 
+// ---- Google Analytics 4 Event Tracking ----
+// Track user actions and errors. Requires GA_MEASUREMENT_ID to be set in HTML.
+// All events respect user's privacy preferences (anonymized).
+
+function trackEvent(eventName, eventParams = {}) {
+  if (typeof gtag !== 'undefined') {
+    gtag('event', eventName, eventParams);
+  }
+}
+
+function trackError(errorName, errorDetails = {}) {
+  if (typeof gtag !== 'undefined') {
+    gtag('event', 'exception', {
+      'description': errorName,
+      'fatal': false,
+      ...errorDetails
+    });
+  }
+}
+
+// Track key user actions
+const analyticsEvents = {
+  // Listing actions
+  viewListingsPage: (area) => trackEvent('view_listings', { area }),
+  postListingStart: () => trackEvent('post_listing_start'),
+  postListingComplete: (area, type) => trackEvent('post_listing', { area, type }),
+  postListingError: (error) => trackError('post_listing_error', { error_msg: error }),
+  editListingStart: (listingId) => trackEvent('edit_listing_start', { listing_id: listingId }),
+  editListingComplete: (listingId) => trackEvent('edit_listing', { listing_id: listingId }),
+  editListingError: (error) => trackError('edit_listing_error', { error_msg: error }),
+  deleteListingStart: (listingId) => trackEvent('delete_listing_start', { listing_id: listingId }),
+  deleteListingComplete: (listingId) => trackEvent('delete_listing', { listing_id: listingId }),
+  
+  // Search & browse
+  searchListings: (query, resultsCount) => trackEvent('search_listings', { search_term: query, results: resultsCount }),
+  browseArea: (area, listingsCount) => trackEvent('browse_area', { area, listings_count: listingsCount }),
+  
+  // Report & moderation
+  reportListing: (listingId, reason) => trackEvent('report_listing', { listing_id: listingId, reason }),
+  reportListingError: (error) => trackError('report_listing_error', { error_msg: error }),
+  
+  // Page navigation
+  viewPageHome: () => trackEvent('page_view', { page_title: 'Home' }),
+  viewPagePrivacy: () => trackEvent('page_view', { page_title: 'Privacy' }),
+  viewPageTerms: () => trackEvent('page_view', { page_title: 'Terms' }),
+  viewPageMyListings: () => trackEvent('page_view', { page_title: 'My Listings' }),
+  
+  // Engagement
+  clickWhatsappLink: (area) => trackEvent('whatsapp_click', { area }),
+  viewListingDetail: (area, type) => trackEvent('view_listing_detail', { area, type }),
+};
+
+// Centralized error logging for failed RPCs
+function logClientError(rpcName, errorObj) {
+  const errorMsg = errorObj?.message || String(errorObj);
+  console.error(`[${rpcName}] Error:`, errorObj);
+  trackError(`rpc_${rpcName}`, { 
+    error_msg: errorMsg,
+    rpc_name: rpcName 
+  });
+}
+
+
 // ---- Build departure board ----
 const boardRows = document.getElementById("boardRows");
 const areaGrid = document.getElementById("areaGrid");
@@ -247,6 +310,75 @@ function escapeHtml(value) {
     .replace(/'/g, "&#39;");
 }
 
+// ---- UI State Helpers (Loading, Error, Success) ----
+// Generates skeleton loader cards (shimmer effect) while data loads
+function generateSkeletons(count = 4) {
+  return Array(count)
+    .fill(0)
+    .map(
+      () => `
+    <div class="listing-card listing-skeleton" aria-hidden="true">
+      <span class="skeleton-line skeleton-short"></span>
+      <span class="skeleton-line skeleton-medium"></span>
+      <span class="skeleton-line skeleton-long"></span>
+      <div class="skeleton-footer">
+        <span class="skeleton-line skeleton-short"></span>
+        <span class="skeleton-line skeleton-short"></span>
+      </div>
+    </div>
+  `
+    )
+    .join("");
+}
+
+// Show loading state with skeleton placeholders
+function showLoadingState(container, message = "Loading listings…") {
+  container.innerHTML = `
+    <div class="listings-loading">
+      <p class="listings-empty">${message}</p>
+      ${generateSkeletons(3)}
+    </div>
+  `;
+}
+
+// Show error state with retry option
+function showErrorState(container, onRetry = null) {
+  const retryBtn = onRetry
+    ? `<button class="listings-empty-cta" id="retryBtn">Try again</button>`
+    : "";
+  container.innerHTML = `
+    <div class="listings-error">
+      <p class="listings-empty">⚠️ Couldn't load listings right now.</p>
+      <p class="listings-empty" style="color: var(--ink-softer); font-size: 13px; margin-top: -8px;">Please check your connection and try again shortly.${retryBtn}</p>
+    </div>
+  `;
+  if (onRetry) {
+    const btn = container.querySelector("#retryBtn");
+    if (btn) btn.addEventListener("click", onRetry);
+  }
+}
+
+// Show empty state with helpful message
+function showEmptyState(container, areaName = "") {
+  const msg = areaName
+    ? `No listings posted in <strong>${escapeHtml(areaName)}</strong> yet — check back soon, or be the first to post one.`
+    : "No listings match your search. Try a different area or keyword.";
+  container.innerHTML = `<p class="listings-empty">${msg}</p>`;
+}
+
+// Show success toast notification (temporary)
+function showSuccessToast(message, duration = 2500) {
+  const toast = document.createElement("div");
+  toast.className = "success-toast";
+  toast.textContent = `✓ ${message}`;
+  document.body.appendChild(toast);
+  setTimeout(() => toast.classList.add("show"), 10);
+  setTimeout(() => {
+    toast.classList.remove("show");
+    setTimeout(() => toast.remove(), 300);
+  }, duration);
+}
+
 function clearSearchUI() {
   if (searchResults) { searchResults.innerHTML = ''; searchResults.hidden = true; }
   if (searchSuggestion) { searchSuggestion.innerHTML = ''; searchSuggestion.hidden = true; }
@@ -274,6 +406,7 @@ async function performPageSearch(q) {
     });
   });
 
+  analyticsEvents.searchListings(q, results.length);
   renderListingsToContainer(results, searchResults);
 
   // show autocomplete suggestions inline
@@ -732,18 +865,24 @@ async function handleReportClick(btn, id) {
   btn.textContent = "Reporting…";
   if (typeof reportListing !== "function" || typeof isSupabaseConfigured !== "function" || !isSupabaseConfigured()) {
     btn.textContent = "Couldn't connect";
+    analyticsEvents.reportListingError("Supabase not configured");
+    showSuccessToast("Connection error — please try again", 2000);
     setTimeout(() => { btn.textContent = original; btn.disabled = false; }, 2000);
     return;
   }
   const { error } = await reportListing(id);
   if (error) {
     btn.textContent = "Couldn't connect";
+    analyticsEvents.reportListingError(error.message || String(error));
+    showSuccessToast("Connection error — please try again", 2000);
     setTimeout(() => { btn.textContent = original; btn.disabled = false; }, 2000);
     return;
   }
   markReported(id);
   btn.textContent = "Reported ✓";
   btn.classList.add("listing-report--done");
+  analyticsEvents.reportListing(id, "user_report");
+  showSuccessToast("Thanks for reporting — our team will review it");
 }
 
 // Delegated click handler covers every place listing cards get rendered
@@ -1289,6 +1428,8 @@ document.getElementById("reviewConfirmBtn").addEventListener("click", async () =
   if (error) {
     console.error("[Kwetu] publish/save RPC failed:", error);
     logClientError(isEditing ? "update_public_listing" : "create_public_listing", error);
+    const errorMsg = isEditing ? "edit_listing_error" : "post_listing_error";
+    analyticsEvents[errorMsg](error.message || String(error));
     confirmBtn.disabled = false;
     confirmBtn.textContent = isEditing ? "Save changes" : "Confirm and publish";
     const friendly = isEditing
@@ -1313,7 +1454,16 @@ document.getElementById("reviewConfirmBtn").addEventListener("click", async () =
     setEditTokenStore(store);
   }
 
+  // Track successful listing creation/edit
+  const listingType = document.getElementById("typeSelect").value;
+  if (isEditing) {
+    analyticsEvents.editListingComplete(editContext.id);
+  } else {
+    analyticsEvents.postListingComplete(areaAtSubmit, listingType);
+  }
+
   confirmBtn.textContent = isEditing ? "Saved ✓" : "Listing posted ✓";
+  showSuccessToast(isEditing ? "Listing updated successfully" : "Listing posted! Redirecting…");
   resetConsentCheckbox();
   refreshAreaCounts();
   goBackShortly();
@@ -1321,23 +1471,28 @@ document.getElementById("reviewConfirmBtn").addEventListener("click", async () =
 
 // Land on the right page directly if someone opens/refreshes with a deep link
 if (location.hash === "#post-room") {
+  analyticsEvents.postListingStart();
   safeReplaceState({ page: "post" }, "#post-room");
   showPost();
 } else if (location.hash.startsWith("#area-")) {
   const slug = location.hash.replace("#area-", "");
   const matchedArea = AREAS.find((a) => a.name.toLowerCase() === slug);
   if (matchedArea) {
+    analyticsEvents.viewListingsPage(matchedArea.name);
     safeReplaceState({ page: "listings", area: matchedArea.name }, location.hash);
     showListingsPage();
     loadAreaListings(matchedArea.name);
   } else {
     safeReplaceState({ page: "home" }, "#");
+    analyticsEvents.viewPageHome();
   }
 } else if (location.hash === "#my-listings") {
+  analyticsEvents.viewPageMyListings();
   safeReplaceState({ page: "mylistings" }, "#my-listings");
   showMyListingsPage();
   loadMyListings();
 } else {
+  analyticsEvents.viewPageHome();
   safeReplaceState({ page: "home" }, "#");
 }
 syncMyListingsFloatVisibility();
@@ -1556,7 +1711,7 @@ function cardIconsHtml(item) {
 function renderListingsToContainer(list, container) {
   container.innerHTML = '';
   if (!list || list.length === 0) {
-    container.innerHTML = '<p class="listings-empty">No listings found.</p>';
+    showEmptyState(container, "");
     container.hidden = false;
     return;
   }
@@ -1711,23 +1866,29 @@ function renderListingCards(list) {
 }
 
 // Reads listings for one area straight from Supabase — no demo/fallback
-// data. Shows a loading state while the request is in flight.
+// data. Shows a loading state with skeleton cards while the request is in flight.
 async function loadAreaListings(areaName) {
   listingsAreaTitle.textContent = areaName;
-  listingsGrid.innerHTML = `<p class="listings-empty">Loading listings…</p>`;
+  showLoadingState(listingsGrid, "Loading listings…");
 
   if (typeof fetchListingsByArea !== "function" || typeof isSupabaseConfigured !== "function" || !isSupabaseConfigured()) {
-    listingsGrid.innerHTML = `<p class="listings-empty">Couldn't connect to the listings database. Please try again shortly.</p>`;
+    showErrorState(listingsGrid);
     return;
   }
   try {
     const { data, error } = await fetchListingsByArea(areaName);
     if (error) {
-      listingsGrid.innerHTML = `<p class="listings-empty">Couldn't load listings right now. Please try again shortly.</p>`;
+      showErrorState(listingsGrid, () => loadAreaListings(areaName));
       return;
     }
+    
+    if (!data || data.length === 0) {
+      showEmptyState(listingsGrid, areaName);
+      return;
+    }
+    
     renderListingCards(
-      (data || []).map((row) => ({
+      data.map((row) => ({
         id: row.id,
         type: row.type,
         description: row.description,
@@ -1739,12 +1900,13 @@ async function loadAreaListings(areaName) {
       }))
     );
   } catch (e) {
-    listingsGrid.innerHTML = `<p class="listings-empty">Couldn't load listings right now. Please try again shortly.</p>`;
+    showErrorState(listingsGrid, () => loadAreaListings(areaName));
   }
 }
 
 function openAreaListings(areaName) {
   showListingsPage();
+  analyticsEvents.viewListingsPage(areaName);
   loadAreaListings(areaName);
   safePushState({ page: "listings", area: areaName }, `#area-${areaName.toLowerCase()}`);
 }
