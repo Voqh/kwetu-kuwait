@@ -247,7 +247,7 @@
 
     async function loadQueue() {
       try {
-        const res = await fetch(`/.netlify/functions/moderation?action=queue`, {
+        const res = await fetch(`https://gdhxmwftdlkhlwmcafto.supabase.co/functions/v1/moderation?action=queue`, {
           headers: { "x-admin-secret": adminSecret },
         });
 
@@ -325,7 +325,7 @@
 
       try {
         const res = await fetch(
-          `/.netlify/functions/moderation?action=reinstate&listing_id=${listingId}`,
+          `https://gdhxmwftdlkhlwmcafto.supabase.co/functions/v1/moderation?action=reinstate&listing_id=${listingId}`,
           { headers: { "x-admin-secret": adminSecret } }
         );
 
@@ -343,7 +343,7 @@
 
       try {
         const res = await fetch(
-          `/.netlify/functions/moderation?action=delete&listing_id=${listingId}`,
+          `https://gdhxmwftdlkhlwmcafto.supabase.co/functions/v1/moderation?action=delete&listing_id=${listingId}`,
           { headers: { "x-admin-secret": adminSecret } }
         );
 
@@ -359,7 +359,7 @@
     function initExportLink() {
       document.getElementById("exportLink").onclick = (e) => {
         e.preventDefault();
-        const url = `/.netlify/functions/export-reports`;
+        const url = `https://gdhxmwftdlkhlwmcafto.supabase.co/functions/v1/export-reports`;
         const xhr = new XMLHttpRequest();
         xhr.open("GET", url);
         xhr.setRequestHeader("x-admin-secret", adminSecret);
