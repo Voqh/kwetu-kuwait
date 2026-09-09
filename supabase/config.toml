@@ -15,6 +15,7 @@ enabled = true
 # Functions configuration
 [functions.purge-listings]
 verify_jwt = false  # Scheduled function, no JWT needed
+scheduling = ["0 3 * * *"]  # Daily at 3 AM UTC
 
 [functions.moderation]
 verify_jwt = false  # Uses custom admin-secret header

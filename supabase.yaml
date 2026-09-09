@@ -1,0 +1,16 @@
+version: "1.0.0"
+
+functions:
+  - name: purge-listings
+    verify_jwt: false
+    import_map: ./functions/import_map.json
+    scheduling:
+      - cron: "0 3 * * *"
+
+  - name: moderation
+    verify_jwt: false
+    import_map: ./functions/import_map.json
+
+  - name: export-reports
+    verify_jwt: false
+    import_map: ./functions/import_map.json
