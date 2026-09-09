@@ -1,0 +1,66 @@
+name: Daily Purge Expired Listings
+
+on:
+  schedule:
+    # Runs daily at 3:00 AM UTC
+    # This is 6:00 AM Kuwait Time (UTC+3)
+    - cron: '0 3 * * *'
+  
+  # Allow manual trigger from GitHub Actions UI
+  workflow_dispatch:
+
+jobs:
+  purge-listings:
+    runs-on: ubuntu-latest
+    name: Purge Expired Listings
+    
+    steps:
+      - name: Trigger purge-listings function
+        id: purge
+        run: |
+          response=$(curl -s -X POST \
+            'https://gdhxmwftdlkhlwmcafto.supabase.co/functions/v1/purge-listings' \
+            -H 'Content-Type: application/json')
+          
+          echo "Response: $response"
+          echo "response=$response" >> $GITHUB_OUTPUT
+      
+      - name: Check purge result
+        run: |
+          response='${{ steps.purge.outputs.response }}'
+          
+          # Extract success status
+          if echo "$response" | grep -q '"success":true'; then
+            echo "✅ Purge completed successfully"
+            echo "$response" | grep -o '"listings_purged":[0-9]*'
+            echo "$response" | grep -o '"leases_purged":[0-9]*'
+            exit 0
+          elif echo "$response" | grep -q '"success":false'; then
+            echo "❌ Purge failed"
+            echo "$response"
+            exit 1
+          else
+            echo "⚠️ Unexpected response format"
+            echo "$response"
+            exit 1
+          fi
+      
+      - name: Notify on failure
+        if: failure()
+        run: |
+          echo "⚠️ Daily purge job failed!"
+          echo "Check GitHub Actions logs for details."
+          exit 1
+
+  # Optional: Log the execution for monitoring
+  log-execution:
+    runs-on: ubuntu-latest
+    name: Log Execution
+    needs: purge-listings
+    if: always()
+    
+    steps:
+      - name: Log job completion
+        run: |
+          echo "Purge job completed at $(date -u +'%Y-%m-%d %H:%M:%S UTC')"
+          echo "Status: ${{ needs.purge-listings.result }}"
