@@ -7,7 +7,8 @@
     "prerender:watch": "nodemon --watch 'scripts' --ext 'js' --exec 'npm run prerender'"
   },
   "dependencies": {
-    "@supabase/supabase-js": "^2.38.0"
+    "@supabase/supabase-js": "^2.38.0",
+    "ws": "^8.14.0"
   },
   "devDependencies": {
     "nodemon": "^3.0.1"
