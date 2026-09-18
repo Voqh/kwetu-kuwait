@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>404 — Page Not Found | Kwetu Kuwait</title>
+<meta name="description" content="The page you're looking for doesn't exist. Return to Kwetu Kuwait to find rooms and roommates.">
+<meta property="og:title" content="404 — Page Not Found">
+<meta property="og:description" content="The page you're looking for doesn't exist. Return to Kwetu Kuwait to find rooms and roommates.">
+<meta property="og:image" content="https://kwetukuwait.com/Assests/site_logo.svg">
+<meta property="og:url" content="https://kwetukuwait.com">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Kwetu Kuwait">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="404 — Page Not Found">
+<meta name="twitter:description" content="The page you're looking for doesn't exist. Return to Kwetu Kuwait.">
+<meta name="twitter:image" content="https://kwetukuwait.com/Assests/site_logo.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Caveat:wght@500;600&family=Space+Grotesk:wght@500;600;700&family=Work+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
+<link rel="icon" type="image/svg+xml" href="Assests/site_logo.svg">
+<link rel="stylesheet" href="css/style.css">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://fonts.googleapis.com https://www.googletagmanager.com https://www.google-analytics.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https://*.supabase.co https://www.google-analytics.com https://www.googletagmanager.com https://*.google-analytics.com; frame-ancestors 'none'; base-uri 'self';">
+<!-- Google Analytics 4 -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-WWXVVE6DX3"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-WWXVVE6DX3', { 'anonymize_ip': true });
+</script>
+</head>
+<body class="view-404">
+
+<div class="grain"></div>
+
+<header class="topbar">
+  <div class="wrap topbar-inner">
+    <a href="/" class="brand">
+      <img class="brand-mark" src="Assests/site_logo.svg" alt="Kwetu Kuwait">
+      <span class="brand-text">
+        <span class="brand-name">Kwetu</span>
+        <span class="brand-place">Kuwait</span>
+      </span>
+    </a>
+  </div>
+</header>
+
+<main class="page page-404">
+  <div class="wrap">
+    <div class="error-container">
+      <h1 class="error-code">404</h1>
+      <h2 class="error-title">Page Not Found</h2>
+      <p class="error-message">
+        The page you're looking for doesn't exist or has moved. Let's get you back on track.
+      </p>
+      
+      <div class="error-actions">
+        <a href="/" class="btn btn-primary">Return to Home</a>
+        <a href="/#how" class="btn btn-secondary">Learn How It Works</a>
+      </div>
+
+      <div class="error-suggestions">
+        <h3>Looking for something?</h3>
+        <ul>
+          <li><a href="/">Find a room</a></li>
+          <li><a href="#" data-open-post>Post a room</a></li>
+          <li><a href="/privacy.html">Privacy Policy</a></li>
+          <li><a href="/terms.html">Terms of Service</a></li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</main>
+
+<style>
+  .page-404 {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 4rem 1rem;
+  }
+
+  .error-container {
+    max-width: 600px;
+  }
+
+  .error-code {
+    font-size: 8rem;
+    font-weight: 700;
+    color: var(--c-brand);
+    margin: 0;
+    line-height: 1;
+    font-family: var(--f-sans-700);
+  }
+
+  .error-title {
+    font-size: 2rem;
+    font-weight: 600;
+    margin: 1rem 0;
+    color: var(--c-text-primary);
+  }
+
+  .error-message {
+    font-size: 1.1rem;
+    color: var(--c-text-secondary);
+    margin-bottom: 2rem;
+    line-height: 1.6;
+  }
+
+  .error-actions {
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 3rem;
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+
+  .error-actions .btn {
+    flex: 1;
+    min-width: 150px;
+    max-width: 200px;
+  }
+
+  .error-suggestions {
+    text-align: left;
+    background: var(--c-bg-secondary);
+    border-radius: 8px;
+    padding: 1.5rem;
+    margin-top: 2rem;
+  }
+
+  .error-suggestions h3 {
+    margin-top: 0;
+    margin-bottom: 1rem;
+    font-size: 1rem;
+    font-weight: 600;
+  }
+
+  .error-suggestions ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+  }
+
+  .error-suggestions li {
+    margin-bottom: 0.75rem;
+  }
+
+  .error-suggestions a {
+    color: var(--c-brand);
+    text-decoration: none;
+    font-weight: 500;
+    transition: opacity 0.2s ease;
+  }
+
+  .error-suggestions a:hover {
+    opacity: 0.8;
+    text-decoration: underline;
+  }
+
+  @media (max-width: 640px) {
+    .error-code {
+      font-size: 5rem;
+    }
+
+    .error-title {
+      font-size: 1.5rem;
+    }
+
+    .error-actions {
+      flex-direction: column;
+    }
+
+    .error-actions .btn {
+      max-width: 100%;
+    }
+  }
+</style>
+
+<script src="js/app.js"></script>
+</body>
+</html>

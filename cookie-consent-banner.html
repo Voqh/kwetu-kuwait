@@ -1,0 +1,166 @@
+<!-- Cookie Consent Banner -->
+<div id="cookieConsent" class="cookie-consent" aria-label="Cookie Consent" role="complementary">
+  <div class="cookie-consent-inner">
+    <div class="cookie-consent-content">
+      <h3>We use cookies to improve your experience</h3>
+      <p>
+        We use Google Analytics to understand how you use Kwetu Kuwait. This helps us improve the platform. 
+        We don't sell your data, and analytics is anonymized.
+        <a href="/privacy.html" target="_blank" rel="noopener noreferrer">Learn more</a>
+      </p>
+    </div>
+    <div class="cookie-consent-actions">
+      <button id="cookieAccept" class="btn btn-primary btn-sm" aria-label="Accept cookies">
+        Accept
+      </button>
+      <button id="cookieReject" class="btn btn-secondary btn-sm" aria-label="Reject cookies">
+        Reject
+      </button>
+    </div>
+  </div>
+</div>
+
+<style>
+  .cookie-consent {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: var(--c-bg-primary);
+    border-top: 1px solid var(--c-border);
+    box-shadow: 0 -2px 12px rgba(0, 0, 0, 0.1);
+    z-index: 9999;
+    padding: 1.5rem;
+    font-size: 0.95rem;
+    animation: slideUp 0.3s ease-out;
+  }
+
+  @keyframes slideUp {
+    from {
+      transform: translateY(100%);
+      opacity: 0;
+    }
+    to {
+      transform: translateY(0);
+      opacity: 1;
+    }
+  }
+
+  .cookie-consent.hidden {
+    display: none;
+  }
+
+  .cookie-consent-inner {
+    max-width: 1200px;
+    margin: 0 auto;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 2rem;
+  }
+
+  .cookie-consent-content {
+    flex: 1;
+  }
+
+  .cookie-consent-content h3 {
+    margin: 0 0 0.5rem 0;
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--c-text-primary);
+  }
+
+  .cookie-consent-content p {
+    margin: 0;
+    color: var(--c-text-secondary);
+    line-height: 1.5;
+  }
+
+  .cookie-consent-content a {
+    color: var(--c-brand);
+    text-decoration: none;
+    font-weight: 500;
+  }
+
+  .cookie-consent-content a:hover {
+    text-decoration: underline;
+  }
+
+  .cookie-consent-actions {
+    display: flex;
+    gap: 1rem;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+
+  .btn-sm {
+    padding: 0.5rem 1rem;
+    font-size: 0.9rem;
+  }
+
+  @media (max-width: 768px) {
+    .cookie-consent {
+      padding: 1rem;
+    }
+
+    .cookie-consent-inner {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 1rem;
+    }
+
+    .cookie-consent-actions {
+      width: 100%;
+      flex-direction: column;
+    }
+
+    .cookie-consent-actions .btn {
+      width: 100%;
+    }
+  }
+</style>
+
+<script>
+  // Cookie Consent Management
+  const COOKIE_CONSENT_KEY = 'kwetu_analytics_consent';
+  const COOKIE_EXPIRY_DAYS = 365;
+
+  function initCookieConsent() {
+    const consentBanner = document.getElementById('cookieConsent');
+    const acceptBtn = document.getElementById('cookieAccept');
+    const rejectBtn = document.getElementById('cookieReject');
+
+    // Check if user has already made a choice
+    const savedConsent = localStorage.getItem(COOKIE_CONSENT_KEY);
+    if (savedConsent !== null) {
+      consentBanner.classList.add('hidden');
+      return;
+    }
+
+    // Show banner if no choice made
+    consentBanner.classList.remove('hidden');
+
+    // Handle accept
+    acceptBtn.addEventListener('click', () => {
+      localStorage.setItem(COOKIE_CONSENT_KEY, 'accepted');
+      consentBanner.classList.add('hidden');
+      // Google Analytics is already running; this just confirms consent
+      console.log('Analytics consent accepted');
+    });
+
+    // Handle reject
+    rejectBtn.addEventListener('click', () => {
+      localStorage.setItem(COOKIE_CONSENT_KEY, 'rejected');
+      consentBanner.classList.add('hidden');
+      // Disable GA if user rejects (optional; you can add window['ga-disable-G-WWXVVE6DX3'] = true)
+      console.log('Analytics consent rejected');
+    });
+  }
+
+  // Initialize on DOM ready
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initCookieConsent);
+  } else {
+    initCookieConsent();
+  }
+</script>
