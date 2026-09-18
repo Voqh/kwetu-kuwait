@@ -1458,13 +1458,8 @@ document.getElementById("reviewConfirmBtn").addEventListener("click", async () =
     const friendly = isEditing
       ? "Couldn't save your changes — the 10-minute edit window may have expired. Try Edit again from My Listings."
       : "Something went wrong publishing your listing — please try again.";
-    // TEMPORARY: shows the raw backend error under the friendly message so
-    // the real cause is visible on-screen (helpful on mobile, where dev
-    // tools aren't handy). Remove the debugLine part once root-caused.
-    const debugLine = error.message ? `\n(debug: ${error.message})` : "";
-    postFormNote.textContent = friendly + debugLine;
+    postFormNote.textContent = friendly;
     postFormNote.style.color = "#C97878";
-    postFormNote.style.whiteSpace = "pre-line";
     return;
   }
 
