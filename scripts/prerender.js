@@ -96,8 +96,10 @@ async function prerender() {
       })
       .join('\n');
 
+    // Replace board rows - use a more specific pattern to avoid matching inner divs
+    // Look for the exact pattern: <div id="boardRows"> ... </div> followed by <div class="board-foot">
     html = html.replace(
-      /<div id="boardRows">[\s\S]*?<\/div>/,
+      /<div id="boardRows">[\s\S]*?<\/div>(?=\s*<div class="board-foot">)/,
       `<div id="boardRows">\n${boardRows}\n</div>`
     );
 
@@ -116,8 +118,10 @@ async function prerender() {
       })
       .join('\n');
 
+    // Replace area grid - use a more specific pattern to avoid matching inner divs
+    // Look for the exact pattern: <div class="area-grid" id="areaGrid"> ... </div> with end marker
     html = html.replace(
-      /<div class="area-grid" id="areaGrid">[\s\S]*?<\/div>/,
+      /<div class="area-grid" id="areaGrid">[\s\S]*?<\/div>(?=\s*<\/div>\s*<\/section>)/,
       `<div class="area-grid" id="areaGrid">\n${areaChips}\n</div>`
     );
 
