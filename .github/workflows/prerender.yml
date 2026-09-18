@@ -1,0 +1,63 @@
+name: Pre-render Listings
+
+on:
+  schedule:
+    # Run every 5 minutes (when listings change frequently)
+    - cron: '*/5 * * * *'
+  
+  # Also run on push to main (for immediate updates)
+  push:
+    branches:
+      - main
+  
+  # Manual trigger via GitHub Actions UI
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  prerender:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+      
+      - name: Install dependencies
+        run: npm ci
+      
+      - name: Run pre-render script
+        run: npm run prerender
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+      
+      - name: Check for changes
+        id: git-check
+        run: |
+          if git diff --quiet index.html; then
+            echo "has_changes=false" >> $GITHUB_OUTPUT
+          else
+            echo "has_changes=true" >> $GITHUB_OUTPUT
+          fi
+      
+      - name: Commit and push changes
+        if: steps.git-check.outputs.has_changes == 'true'
+        run: |
+          git config --local user.email "bot@kwetu.com"
+          git config --local user.name "Kwetu Pre-render Bot"
+          git add index.html
+          git commit -m "Pre-render: update listings at $(date -u +'%Y-%m-%d %H:%M:%S UTC')"
+          git push
+      
+      - name: No changes
+        if: steps.git-check.outputs.has_changes == 'false'
+        run: echo "✅ No listing changes, HTML unchanged"

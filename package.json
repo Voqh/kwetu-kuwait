@@ -1,0 +1,15 @@
+{
+  "name": "kwetu-kuwait",
+  "version": "1.0.0",
+  "description": "Kwetu Kuwait - Find your room, find your people",
+  "scripts": {
+    "prerender": "node scripts/prerender.js",
+    "prerender:watch": "nodemon --watch 'scripts' --ext 'js' --exec 'npm run prerender'"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.38.0"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.1"
+  }
+}

@@ -629,12 +629,35 @@ async function handleSearchSubmit(q) {
   performPageSearch(q);
 }
 
+// Check if this page was pre-rendered with data (for SEO/bot crawling)
+function getPrerenderedData() {
+  try {
+    const dataScript = document.getElementById('prerender-data');
+    if (dataScript) {
+      const data = JSON.parse(dataScript.textContent);
+      console.log('📦 Using pre-rendered data:', data.areaStats?.length, 'areas');
+      return data;
+    }
+  } catch (e) {
+    console.warn('⚠️  Pre-rendered data parse error:', e.message);
+  }
+  return null;
+}
+
 // Render demo data immediately so the page never looks empty while the
 // network request (if any) is in flight, then swap in live counts once
 // Supabase responds — and silently keep the demo data if it's not configured
 // or the request fails.
-renderAreas(buildAreasData(null));
-renderSearchAreas(buildAreasData(null));
+const prerenderedData = getPrerenderedData();
+if (prerenderedData && prerenderedData.areaStats) {
+  console.log('✅ Rendering pre-rendered area data');
+  renderAreas(buildAreasData(prerenderedData.areaStats));
+  renderSearchAreas(buildAreasData(prerenderedData.areaStats));
+} else {
+  console.log('🔄 No pre-rendered data, using demo');
+  renderAreas(buildAreasData(null));
+  renderSearchAreas(buildAreasData(null));
+}
 
 // Re-fetches live open counts and re-renders the board + area grids. Called
 // on first load and again right after a listing is published, so the
