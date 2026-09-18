@@ -214,6 +214,240 @@ Stop and ask if:
 
 ---
 
+## Long-Running Operations & Context Continuity
+
+**Problem**: Multi-step tasks (>7 steps) spanning multiple agent sessions often result in:
+- Contradictory decisions (agent A made choice X, agent B contradicts it)
+- Forgotten constraints (later steps ignore earlier decisions)
+- Drift from original intent (goals shift as context is lost)
+- Wasted cycles (work undone because new agent wasn't aware of it)
+
+**Solution**: Use structured context continuity for complex work.
+
+### 1. Project State File (Traveling Context)
+
+Before starting any task longer than 7 steps, create a `PROJECT_STATE.md` file in the repo root:
+
+```markdown
+# PROJECT_STATE.md
+**Last Updated**: 2026-09-18 14:30 UTC  
+**Current Phase**: Feature: Add Bedroom Count to Listings  
+**Session ID**: abc123xyz  
+
+## Completed Steps
+- [x] Step 1: Read schema.sql and understand listings table structure
+- [x] Step 2: Identified 3 existing migrations as patterns to follow
+- [x] Step 3: Wrote migration 20260918_009_add_bedroom_count.sql
+
+## In Progress
+- [ ] Step 4: Update RPC create_public_listing() to accept bedroom_count parameter
+- [ ] Step 5: Test RPC with real Supabase instance
+- [ ] Step 6: Update app.js form to collect bedroom_count
+
+## Blocked / On Hold
+- None currently
+
+## Key Decisions Made
+- Bedroom count stored as INT (not ENUM, to allow flexibility)
+- Made optional field (not required in form, nullable in DB)
+- No schema change to existing records (backward compatible)
+
+## Constraints
+- Cannot break existing listings or edit tokens
+- Must maintain RLS policies (anon still read-only)
+- No breaking changes to edit_listing() RPC
+- Must test before deploy
+
+## Risks / Open Questions
+- Should default value be NULL or 0? → DECIDED: NULL (means not specified)
+- Should we validate range (1-10 bedrooms)? → DECIDED: Yes, in RPC validation
+- Does this require migration notification to users? → TBD
+
+## Next Agent's Checklist
+1. Read this file in full before starting work
+2. Verify all "Completed" items by spot-checking code (don't trust the checkbox)
+3. Pick up where the previous agent left off (Step 4)
+4. Update this file after EACH step (Completed or In Progress)
+5. If you hit a blocker, update "Blocked" and stop — don't guess
+6. If you find a contradiction in earlier decisions, flag it in "Open Questions" before proceeding
+```
+
+**Usage Rules**:
+- Create PROJECT_STATE.md at task start
+- Update it after EVERY step (not just at chunk end)
+- Pass it to the next agent at the start of every new session
+- If you're working on a task, the file is your source of truth, not your memory
+- Keep it concise (< 200 lines); link to detailed docs if needed
+
+---
+
+### 2. Task Decomposition Before Execution
+
+**Rule**: Never run a task with >7 steps as a single operation. Break it into chunks.
+
+**Chunking Strategy**:
+
+| Complexity | Chunk Size | Pattern | Example |
+|-----------|-----------|---------|---------|
+| Small (1-7 steps) | All at once | Single session | "Fix typo in error message" |
+| Medium (8-21 steps) | 5-7 steps per chunk | 3-4 sessions | "Add bedroom_count field to listings" |
+| Large (22+ steps) | 5-7 steps per chunk | 5+ sessions | "Redesign entire post flow with validation" |
+
+**Example: Medium Task Breakdown**
+
+**Task**: "Add bedroom_count field to listings table"
+
+**Full step list** (15 steps):
+1. Read schema.sql
+2. Review existing migrations (pattern matching)
+3. Write new migration file
+4. Update RPC create_public_listing() signature
+5. Add server-side validation in RPC
+6. Test RPC against real Supabase
+7. Update RPC get_listings() to return bedroom_count
+8. Update app.js form (add input field)
+9. Update renderListingCards() to display bedroom_count
+10. Update renderMyListings() to show bedroom_count in owner view
+11. Test full flow: post → search → view
+12. Test edit flow: load existing listing → edit bedroom_count
+13. Verify RLS still works (anon can't write directly)
+14. Write migration rollback plan (just in case)
+15. Commit and document changes
+
+**Chunked into 3 sessions**:
+
+**Chunk 1** (Steps 1-5, ~45 min):
+- Read schema.sql
+- Review migration patterns
+- Write new migration
+- Update create_public_listing() signature
+- Add validation
+
+**Chunk 2** (Steps 6-10, ~60 min):
+- Test RPC on real Supabase
+- Update get_listings() RPC
+- Add form input field in HTML
+- Update display functions (renderListingCards, renderMyListings)
+
+**Chunk 3** (Steps 11-15, ~45 min):
+- Test post → search → view flow
+- Test edit flow
+- Verify RLS hasn't been broken
+- Write rollback plan
+- Commit with detailed message
+
+**Why this works**:
+- Each chunk is standalone (can be paused/resumed without losing context)
+- Agent never drifts far (5-7 steps is manageable in one session)
+- STATE file captures what happened, so next agent doesn't re-discover things
+- Natural stopping points for review and validation
+
+---
+
+### 3. Validation Checkpoint Between Chunks
+
+**Rule**: After each chunk completes, pause and present a summary for human review before proceeding to the next chunk.
+
+**Checkpoint Ceremony** (5 steps):
+
+**Step 1: Summarize What Was Done**
+```
+✅ Chunk 1 Complete (Steps 1-5/15)
+
+Files Modified:
+- migrations/20260918_009_add_bedroom_count.sql (created)
+- schema.sql (snapshot updated)
+- db/functions/ (create_public_listing() RPC updated)
+
+Changes Made:
+- ALTER TABLE listings ADD COLUMN bedroom_count INT
+- Updated create_public_listing() to accept bedroom_count parameter
+- Added validation: 1-10 range, NULL allowed
+- RPC tested on staging Supabase (12 test cases passed)
+
+Code Quality:
+- All existing tests still pass
+- No migration syntax errors (verified with psql --dry-run)
+- RLS policies unchanged (anon still read-only)
+```
+
+**Step 2: List What's Ready to Review**
+```
+📋 Code Review Ready:
+1. Migration file at migrations/20260918_009_add_bedroom_count.sql
+2. RPC implementation at [db/functions#L...](...)
+3. Test results (log output included)
+```
+
+**Step 3: Flag Any Issues or Decisions**
+```
+⚠️ Decisions Made (need approval before continuing):
+- Default bedroom_count = NULL (not 0)
+- Validation range: 1-10 bedrooms (reject invalid input)
+
+❓ Open Questions for You:
+- Should we send a notification when users view this field?
+- Should we add a migration rollback test?
+```
+
+**Step 4: Present Next Steps (Preview)**
+```
+→ Chunk 2 Preview (Steps 6-10):
+- Update get_listings() RPC to return bedroom_count
+- Add <input type="number"> field to post form
+- Update listing display cards to show bedroom count
+- Estimated time: 60 minutes
+```
+
+**Step 5: Wait for Approval**
+```
+✋ **PAUSED** — Ready for your review.
+
+Please:
+1. Review the code changes (links above)
+2. Approve or request changes to decisions
+3. Say "continue" when ready for Chunk 2
+```
+
+**Why this pattern works**:
+- Human sees progress (not a black box)
+- Issues are caught early (before they compound)
+- Decisions are explicitly approved (no second-guessing later)
+- Next chunk can adjust based on feedback
+
+---
+
+### 4. Agent Instructions for Long Operations
+
+**When you receive a task:**
+
+1. **Check for PROJECT_STATE.md**
+   - If it exists → read it in full first, then pick up where you left off
+   - If it doesn't exist → create one before starting
+
+2. **Count the steps**
+   - If ≤7 steps → proceed as one session
+   - If >7 steps → break into chunks of 5-7, create STATE file, execute chunk 1 only
+
+3. **After each chunk:**
+   - Update PROJECT_STATE.md with what was completed
+   - Present the checkpoint ceremony (summary + decisions + preview)
+   - **STOP** — do not automatically proceed to next chunk
+   - Wait for human approval before continuing
+
+4. **If you find contradictions:**
+   - Check PROJECT_STATE.md to see what was decided earlier
+   - If the earlier decision seems wrong, flag it in "Open Questions" (don't override)
+   - If it's a true bug, ask before proceeding
+
+5. **If you get stuck:**
+   - Update PROJECT_STATE.md with what failed and why
+   - Move it to "Blocked" section
+   - Present a summary and stop
+   - Don't guess or try workarounds
+
+---
+
 ## Escalation Path
 
 If you encounter:
