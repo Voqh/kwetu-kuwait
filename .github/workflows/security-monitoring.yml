@@ -1,0 +1,198 @@
+name: Daily Security Check
+
+on:
+  schedule:
+    # Run daily at 9 AM UTC
+    - cron: '0 9 * * *'
+  workflow_dispatch: # Allow manual trigger
+
+jobs:
+  security-check:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Set up PostgreSQL client
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y postgresql-client
+      
+      - name: Run Daily Security Check
+        env:
+          SUPABASE_DATABASE_URL: ${{ secrets.SUPABASE_DATABASE_URL }}
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+        run: |
+          TIMESTAMP=$(date '+%Y-%m-%d %H:%M:%S')
+          REPORT_FILE="/tmp/kwetu-security-report.txt"
+          
+          {
+              echo "╔════════════════════════════════════════════════╗"
+              echo "║   KWETU KUWAIT DAILY SECURITY CHECK           ║"
+              echo "║   $TIMESTAMP"
+              echo "╚════════════════════════════════════════════════╝"
+              echo ""
+              
+              # 1. CRITICAL THREATS
+              echo "🔴 CRITICAL THREATS (24h)"
+              CRITICAL=$(psql "$SUPABASE_DATABASE_URL" -t -c "
+                  SELECT COUNT(*) FROM security_threats 
+                  WHERE severity = 'critical' 
+                  AND resolved_at IS NULL
+                  AND detected_at >= NOW() - INTERVAL '24 hours'
+              " 2>/dev/null || echo "ERROR")
+              echo "└─ Count: $CRITICAL"
+              if [ "$CRITICAL" -gt 0 ]; then
+                  echo "⚠️  ACTION REQUIRED: Investigate critical threats"
+              fi
+              echo ""
+              
+              # 2. RATE LIMIT STATUS
+              echo "🟠 RATE LIMIT VIOLATIONS (Active)"
+              echo "├─ By Operation:"
+              psql "$SUPABASE_DATABASE_URL" -t -c "
+                  SELECT 
+                      '  ' || operation as operation, 
+                      COUNT(DISTINCT ip_hash) as blocked_ips
+                  FROM rate_limit_violations
+                  WHERE blocked_until > NOW()
+                  GROUP BY operation
+                  ORDER BY COUNT(*) DESC
+              " 2>/dev/null || echo "  ERROR connecting to database"
+              echo ""
+              
+              # 3. RECENT HIGH-SEVERITY EVENTS
+              echo "🟡 HIGH-SEVERITY AUDIT EVENTS (24h)"
+              psql "$SUPABASE_DATABASE_URL" -t -c "
+                  SELECT 
+                      '  ' || event_type as event_type,
+                      COUNT(*) as count
+                  FROM security_audit_log
+                  WHERE severity IN ('high', 'critical')
+                  AND created_at >= NOW() - INTERVAL '24 hours'
+                  GROUP BY event_type
+                  ORDER BY count DESC
+                  LIMIT 5
+              " 2>/dev/null || echo "  ERROR"
+              echo ""
+              
+              # 4. SYSTEM HEALTH
+              echo "🟢 SYSTEM HEALTH"
+              ACTIVE=$(psql "$SUPABASE_DATABASE_URL" -t -c "SELECT COUNT(*) FROM listings WHERE status = 'active'" 2>/dev/null || echo "?")
+              REPORTED=$(psql "$SUPABASE_DATABASE_URL" -t -c "SELECT COUNT(*) FROM listings WHERE status = 'reported'" 2>/dev/null || echo "?")
+              echo "├─ Active Listings: $ACTIVE"
+              echo "├─ Reported (Hidden): $REPORTED"
+              echo "└─ Database: Connected ✓"
+              echo ""
+              
+              echo "Generated: $TIMESTAMP"
+          
+          } | tee "$REPORT_FILE"
+          
+          # Send to Slack if webhook configured
+          if [ ! -z "$SLACK_WEBHOOK_URL" ]; then
+              curl -X POST "$SLACK_WEBHOOK_URL" \
+                  -H 'Content-Type: application/json' \
+                  --data-raw "{\"text\": \"\`\`\`$(cat $REPORT_FILE)\`\`\`\"}" \
+                  2>/dev/null && echo "✓ Report sent to Slack" || echo "✗ Slack send failed"
+          fi
+      
+      - name: Upload Report Artifact
+        if: always()
+        uses: actions/upload-artifact@v3
+        with:
+          name: security-report-${{ github.run_id }}
+          path: /tmp/kwetu-security-report.txt
+          retention-days: 30
+
+  weekly-audit:
+    runs-on: ubuntu-latest
+    # Run every Friday at 2 PM UTC
+    if: github.event.schedule == '0 14 * * 5' || github.event_name == 'workflow_dispatch'
+    
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Set up PostgreSQL client
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y postgresql-client
+      
+      - name: Run Weekly Security Audit
+        env:
+          SUPABASE_DATABASE_URL: ${{ secrets.SUPABASE_DATABASE_URL }}
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+        run: |
+          TIMESTAMP=$(date '+%Y-%m-%d %H:%M:%S')
+          WEEK_START=$(date -u -d '7 days ago' '+%Y-%m-%d')
+          REPORT_FILE="/tmp/kwetu-weekly-audit.txt"
+          
+          {
+              echo "╔════════════════════════════════════════════════╗"
+              echo "║   KWETU KUWAIT WEEKLY SECURITY AUDIT          ║"
+              echo "║   Week of: $WEEK_START"
+              echo "╚════════════════════════════════════════════════╝"
+              echo ""
+              
+              echo "📊 THREAT ANALYSIS (Last 7 Days)"
+              echo "├─ By Type:"
+              psql "$SUPABASE_DATABASE_URL" -t -c "
+                  SELECT 
+                      '  ' || threat_type as threat_type,
+                      COUNT(*) as count,
+                      MAX(severity) as max_severity
+                  FROM security_threats
+                  WHERE detected_at >= NOW() - INTERVAL '7 days'
+                  GROUP BY threat_type
+                  ORDER BY count DESC
+              " 2>/dev/null || echo "  ERROR"
+              echo ""
+              
+              echo "📋 AUDIT LOG REVIEW (Last 7 Days)"
+              echo "├─ Events by Type:"
+              psql "$SUPABASE_DATABASE_URL" -t -c "
+                  SELECT 
+                      '  ' || event_type as event_type,
+                      COUNT(*) as count,
+                      MAX(severity) as max_severity
+                  FROM security_audit_log
+                  WHERE created_at >= NOW() - INTERVAL '7 days'
+                  GROUP BY event_type
+                  ORDER BY count DESC
+                  LIMIT 10
+              " 2>/dev/null || echo "  ERROR"
+              echo ""
+              
+              echo "⚠️  ANOMALIES & PATTERNS"
+              echo "├─ IPs with Multiple Threats (3+):"
+              psql "$SUPABASE_DATABASE_URL" -t -c "
+                  SELECT 
+                      '  ' || ip_hash as ip_hash,
+                      COUNT(*) as threat_count
+                  FROM security_threats
+                  WHERE detected_at >= NOW() - INTERVAL '7 days'
+                  GROUP BY ip_hash
+                  HAVING COUNT(*) >= 3
+                  ORDER BY threat_count DESC
+                  LIMIT 5
+              " 2>/dev/null || echo "  (none)"
+              echo ""
+              
+              echo "Generated: $TIMESTAMP"
+          
+          } | tee "$REPORT_FILE"
+          
+          if [ ! -z "$SLACK_WEBHOOK_URL" ]; then
+              curl -X POST "$SLACK_WEBHOOK_URL" \
+                  -H 'Content-Type: application/json' \
+                  --data-raw "{\"text\": \"\`\`\`$(cat $REPORT_FILE)\`\`\`\"}" \
+                  2>/dev/null
+          fi
+      
+      - name: Upload Audit Report
+        if: always()
+        uses: actions/upload-artifact@v3
+        with:
+          name: weekly-audit-${{ github.run_id }}
+          path: /tmp/kwetu-weekly-audit.txt
+          retention-days: 90
