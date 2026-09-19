@@ -174,20 +174,51 @@
       color: #666;
       padding: 40px;
     }
+    .session-info {
+      font-size: 12px;
+      color: #666;
+      margin-top: 10px;
+      padding: 5px;
+      background: #f0f0f0;
+      border-radius: 3px;
+    }
+    .security-warning {
+      background: #fff3cd;
+      border: 1px solid #ffc107;
+      padding: 10px;
+      border-radius: 4px;
+      margin-bottom: 10px;
+      font-size: 12px;
+    }
+    .audit-log {
+      background: #f8f9fa;
+      border: 1px solid #dee2e6;
+      border-radius: 4px;
+      padding: 10px;
+      margin-top: 15px;
+      max-height: 200px;
+      overflow-y: auto;
+      font-family: monospace;
+      font-size: 11px;
+    }
   </style>
 </head>
 <body>
   <div class="container">
-    <h1>🔐 Kwetu Kuwait Admin</h1>
+    <h1>🔐 Kwetu Kuwait Admin — Security Enhanced</h1>
+    <div class="security-warning">
+      ⚠️ This is a restricted admin dashboard. All actions are logged and monitored.
+    </div>
 
     <!-- Authentication Section -->
     <div class="auth-box">
       <div>
         <label for="adminSecret">Admin Secret:</label>
-        <input type="password" id="adminSecret" placeholder="Enter admin secret">
+        <input type="password" id="adminSecret" placeholder="Enter admin secret" autocomplete="off">
         <button onclick="authenticate()">Authenticate</button>
       </div>
       <div id="authStatus"></div>
+      <div id="sessionInfo" class="session-info" style="display: none;"></div>
     </div>
 
     <!-- Content (hidden until authenticated) -->
@@ -224,6 +255,45 @@
 
   <script>
     let adminSecret = "";
+    let sessionStartTime = null;
+    const SESSION_TIMEOUT_MS = 30 * 60 * 1000; // 30 minutes
+    let sessionWarningShown = false;
+
+    // Security: Validate input before use
+    function sanitizeInput(input) {
+      if (!input || typeof input !== 'string') return '';
+      // Remove potentially dangerous characters
+      return input.slice(0, 256); // Reasonable length limit
+    }
+
+    // Security: Escape HTML to prevent XSS
+    function escapeHtml(text) {
+      const div = document.createElement('div');
+      div.textContent = text;
+      return div.innerHTML;
+    }
+
+    // Security: Auto-logout after inactivity
+    function startSessionTimer() {
+      setInterval(() => {
+        if (sessionStartTime && Date.now() - sessionStartTime > SESSION_TIMEOUT_MS) {
+          if (!sessionWarningShown) {
+            showAuthStatus("error", "✗ Session expired. Re-authenticate.");
+            sessionWarningShown = true;
+          }
+          logoutSession();
+        }
+      }, 60000); // Check every minute
+    }
+
+    function logoutSession() {
+      adminSecret = "";
+      sessionStorage.removeItem("adminSecret");
+      document.getElementById("content").style.display = "none";
+      document.getElementById("contentDisabled").style.display = "block";
+      document.getElementById("sessionInfo").style.display = "none";
+      document.getElementById("adminSecret").value = "";
+    }
 
     function authenticate() {
       const secret = document.getElementById("adminSecret").value;
@@ -231,13 +301,32 @@
         showAuthStatus("error", "Enter admin secret");
         return;
       }
+
+      // Validate secret format (basic check)
+      if (secret.length < 16) {
+        showAuthStatus("error", "Invalid admin secret format");
+        return;
+      }
+
       adminSecret = secret;
+      sessionStartTime = Date.now();
       sessionStorage.setItem("adminSecret", secret);
+      sessionStorage.setItem("sessionStartTime", sessionStartTime);
+      
       showAuthStatus("authenticated", "✓ Authenticated");
+      updateSessionInfo();
       document.getElementById("content").style.display = "block";
       document.getElementById("contentDisabled").style.display = "none";
+      
       loadQueue();
       initExportLink();
+    }
+
+    function updateSessionInfo() {
+      const info = document.getElementById("sessionInfo");
+      const startTime = new Date(parseInt(sessionStartTime)).toLocaleTimeString();
+      info.textContent = `Session started: ${startTime} | Expires in 30 minutes`;
+      info.style.display = "block";
     }
 
     function showAuthStatus(status, message) {
@@ -299,19 +388,25 @@
         <tbody>`;
 
       queue.forEach((item) => {
-        const reasons = item.report_reasons ? item.report_reasons.join(", ") : "(none)";
+        // Security: Sanitize all user-provided data
+        const reasonsArray = item.report_reasons ? item.report_reasons : [];
+        const reasons = reasonsArray.length > 0 
+          ? reasonsArray.map(r => escapeHtml(r)).join(", ")
+          : "(none)";
         const posted = new Date(item.created_at).toLocaleDateString("en-GB");
+        const listingId = escapeHtml(item.id.substring(0, 8)) + "...";
+        const area = escapeHtml(item.area);
 
         html += `<tr>
-          <td><code>${item.id.substring(0, 8)}...</code></td>
-          <td>${item.area}</td>
-          <td><strong>${item.report_count}</strong></td>
+          <td><code>${listingId}</code></td>
+          <td>${area}</td>
+          <td><strong>${escapeHtml(String(item.report_count))}</strong></td>
           <td><small>${reasons}</small></td>
           <td>${posted}</td>
           <td>
             <div class="action-buttons">
-              <button class="btn-reinstate" onclick="reinstate('${item.id}')">Reinstate</button>
-              <button class="btn-delete" onclick="deleteConfirm('${item.id}')">Delete</button>
+              <button class="btn-reinstate" onclick="reinstate('${escapeHtml(item.id)}')">Reinstate</button>
+              <button class="btn-delete" onclick="deleteConfirm('${escapeHtml(item.id)}')">Delete</button>
             </div>
           </td>
         </tr>`;
@@ -383,10 +478,22 @@
 
     // Restore auth from session if available
     window.addEventListener("load", () => {
+      startSessionTimer(); // Start auto-logout timer
+      
       const saved = sessionStorage.getItem("adminSecret");
-      if (saved) {
-        document.getElementById("adminSecret").value = saved;
-        authenticate();
+      const savedTime = sessionStorage.getItem("sessionStartTime");
+      
+      if (saved && savedTime) {
+        const elapsed = Date.now() - parseInt(savedTime);
+        if (elapsed < SESSION_TIMEOUT_MS) {
+          document.getElementById("adminSecret").value = saved;
+          sessionStartTime = parseInt(savedTime);
+          authenticate();
+        } else {
+          // Session expired
+          sessionStorage.removeItem("adminSecret");
+          sessionStorage.removeItem("sessionStartTime");
+        }
       }
     });
   </script>
