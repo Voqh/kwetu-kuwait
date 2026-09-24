@@ -20,6 +20,9 @@
 <link rel="icon" type="image/svg+xml" href="Assests/site_logo.svg">
 <link rel="stylesheet" href="css/style.css">
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://fonts.googleapis.com https://www.googletagmanager.com https://www.google-analytics.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https://*.supabase.co https://www.google-analytics.com https://www.googletagmanager.com https://*.google-analytics.com; frame-ancestors 'none'; base-uri 'self';">
+<!-- Clickjacking guard: meta-tag frame-ancestors is ignored by browsers; GitHub Pages can't send the header form -->
+<style id="antiClickjack">body{display:none!important;}</style>
+<script>if(self===top){document.getElementById('antiClickjack').remove();}else{top.location=self.location;}</script>
 <!-- Google Analytics 4 -->
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-WWXVVE6DX3"></script>
 <script>

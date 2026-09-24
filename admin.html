@@ -6,6 +6,9 @@
   <title>Admin — Kwetu Kuwait</title>
   <meta name="robots" content="noindex, nofollow">
   <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://fonts.googleapis.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https://*.supabase.co; frame-ancestors 'none'; base-uri 'self';">
+  <!-- Clickjacking guard: meta-tag frame-ancestors is ignored by browsers; GitHub Pages can't send the header form -->
+  <style id="antiClickjack">body{display:none!important;}</style>
+  <script>if(self===top){document.getElementById('antiClickjack').remove();}else{top.location=self.location;}</script>
   <style>
     * { box-sizing: border-box; }
     body {

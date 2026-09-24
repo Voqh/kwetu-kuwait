@@ -11,7 +11,7 @@ jobs:
     runs-on: ubuntu-latest
     
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       
       - name: Set up PostgreSQL client
         run: |
@@ -99,7 +99,7 @@ jobs:
       
       - name: Upload Report Artifact
         if: always()
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: security-report-${{ github.run_id }}
           path: /tmp/kwetu-security-report.txt
@@ -111,7 +111,7 @@ jobs:
     if: github.event.schedule == '0 14 * * 5' || github.event_name == 'workflow_dispatch'
     
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       
       - name: Set up PostgreSQL client
         run: |
@@ -191,7 +191,7 @@ jobs:
       
       - name: Upload Audit Report
         if: always()
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: weekly-audit-${{ github.run_id }}
           path: /tmp/kwetu-weekly-audit.txt
