@@ -99,7 +99,7 @@ jobs:
       
       - name: Upload Report Artifact
         if: always()
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: security-report-${{ github.run_id }}
           path: /tmp/kwetu-security-report.txt
@@ -191,7 +191,7 @@ jobs:
       
       - name: Upload Audit Report
         if: always()
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: weekly-audit-${{ github.run_id }}
           path: /tmp/kwetu-weekly-audit.txt
